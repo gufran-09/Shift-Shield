@@ -48,7 +48,37 @@ cd backend && python -m pytest -q
 
 ## Architecture on AWS
 
-_Gufran to fill in once deployed (region ap-south-1, Mumbai)._
+ShiftShield is deployed entirely serverless in **`ap-south-1` (Mumbai)** using AWS Serverless Application Model (SAM):
+
+```text
+┌─────────────────┐       ┌─────────────────┐       ┌──────────────────────┐
+│  React 19 SPA   │ ────► │ API Gateway v2  │ ────► │ FastAPI API Lambda   │
+│ (Amplify / S3)  │       │   (HTTP API)    │       │   (Python 3.12)      │
+└─────────────────┘       └─────────────────┘       └──────────┬───────────┘
+                                                               │
+┌─────────────────┐       ┌─────────────────┐                  ▼
+│  EventBridge    │ ────► │ 15-min Evaluator│ ─────► ┌───────────────────┐
+│ Scheduler (15m) │       │ Lambda + DLQ    │        │ Amazon DynamoDB   │
+└─────────────────┘       └────────┬────────┘        │ (9 on-demand      │
+                                   │                 │  tables with TTL) │
+                                   ▼                 └───────────────────┘
+                          ┌─────────────────┐                  ▲
+                          │ AWS SNS Topic   │                  │
+                          │ (Alert Emails)  │ ─────────────────┘
+                          └─────────────────┘
+```
+
+- **API & Compute**: Amazon API Gateway HTTP API v2 invoking FastAPI (Python 3.12 via Mangum) with least-privilege IAM roles.
+- **Scheduled Evaluator**: Amazon EventBridge Scheduler triggers the evaluator Lambda every 15 minutes with SQS Dead Letter Queue and CloudWatch alarms.
+- **Data Persistence**: 9 Amazon DynamoDB on-demand tables (`sites`, `site_state`, `alert_keys` with 48h TTL, `issue_log`, `acks`, `rest_confirms`, `rulebooks`, `obligation_log`, `replay_runs`).
+- **Alert Dispatch & Proof**: Amazon SNS email delivery with single-use HMAC-SHA256 supervisor acknowledgement links (`/ack/{token}`) backed by AWS Secrets Manager.
+- **Infrastructure as Code**: Single-command automated deployment via [`template.yaml`](template.yaml):
+  ```bash
+  sam validate --lint
+  sam build --use-container
+  sam deploy --guided
+  ```
+  See [`docs/aws-deployment-guide.md`](docs/aws-deployment-guide.md) for step-by-step instructions.
 
 ## Sources
 
@@ -60,4 +90,4 @@ _Gufran to fill in once deployed (region ap-south-1, Mumbai)._
 ## AI tools used
 
 - **Claude (Anthropic):** research, the reference WBGT engine, test and evaluation code, documentation, debugging (Sameer).
-- _Gufran to add his tools (e.g. Manus)._
+- **Google Antigravity & Gemini 3.8:** AWS SAM serverless architecture design, DynamoDB data modeling, alert deduplication & evaluator engine, proof-of-rest verification loop, UI/UX polish, and deployment pipelines (Gufran).
