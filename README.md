@@ -1,6 +1,8 @@
 # ShiftShield
 
-**The heat alert that proves the rest happened.** Environmental Hacks 2026 (WeMakeDevs × AWS), Track 02: Heat and Water. Team EcoNexus: Sameer Ahmed, Gufran.
+**The heat alert that proves the rest happened.** Environmental Hacks 2026 (WeMakeDevs × AWS), Track 02: Heat and Water. Team EcoNexus: Sameer Ahmed, Gufran Ahmed.
+
+**Live app:** _link added after deployment_ · **Demo video (3 min):** _link added after recording_
 
 Outdoor workers in Indian cities get heat advice as a fixed rule: "avoid work from 12 noon to 3 PM". ShiftShield turns a worksite's real conditions into a work-rest schedule, warns about an hour before it tightens, and keeps a record of whether the break happened.
 
@@ -31,7 +33,9 @@ Archive/reanalysis is not an on-site reading, and the site adjustments are provi
 |---|---|---|
 | WBGT vs an independent pure-Python Liljegren implementation (5 cases, Hyderabad) | differences +0.45, +0.23, +0.30, −0.01, +0.32 °C (tolerance 1.5) | `cd backend && python -m pytest tests/test_wbgt_crosscheck.py -v -s` |
 | Physical sanity: more humidity, less shade or less wind never lowers WBGT in sun | pass | same file |
-| Rulebook answer key: Delhi HAP 2025, every row checked by hand against the PDF page | complete; scanned pages flagged | `tests/test_rulebook_answer_key.py` |
+| Rulebook answer key: Delhi HAP 2025, every row checked by hand against the PDF page | 48 rows; 15 on scanned pages flagged | `tests/test_rulebook_answer_key.py` |
+| Rulebook answer key: Telangana HAP 2021, every row checked by hand | 26 rows; plan gives two conflicting peak windows (p.35, p.59) | `tests/test_rulebook_answer_key_telangana.py` |
+| NIOSH thresholds equal the RAL/REL equations (section 8.1), rounded down | pass for every row | `tests/test_niosh_equations.py` |
 | Rulebook agent recall / precision on the Delhi plan | _pending Bedrock run_ | `python -m evaluation.score_rulebook candidates.json tests/data/heat_action_plans/delhi_hap_2025_obligations.csv` |
 
 ## Run locally
@@ -80,12 +84,28 @@ ShiftShield deploys serverless to **`ap-south-1` (Mumbai)** with the AWS Serverl
   ```
   See [`docs/aws-deployment-guide.md`](docs/aws-deployment-guide.md) for step-by-step instructions.
 
+## Repository map
+
+| Path | What is there |
+|---|---|
+| `backend/app/` | FastAPI app: WBGT physics, NIOSH scheduling, alerts, rest record, rulebook agent |
+| `backend/app/config/` | Versioned threshold and site-adjustment files, with sources |
+| `backend/tests/` | Test suite, independent WBGT reference, heat action plan PDFs and answer keys |
+| `backend/evaluation/` | Real-day replay, rulebook extraction runner and scorer |
+| `frontend/` | React app: heat check, setup, dashboard, worker QR page, replay, rulebooks |
+| `template.yaml` | AWS SAM infrastructure |
+| `docs/` | Evidence, NIOSH method note, deployment guide, video script |
+
 ## Sources
 
 - NIOSH (2016). *Criteria for a Recommended Standard: Occupational Exposure to Heat and Hot Environments*, DHHS (NIOSH) Publication 2016-106. RAL/REL equations, section 8.1.
 - Liljegren, J. C. et al. (2008). Modeling the wet bulb globe temperature using standard meteorological measurements. *J. Occup. Environ. Hyg.* 5(10).
 - Delhi Disaster Management Authority, Heat Action Plan 2025. Government of Telangana, Heatwave Action Plan 2021.
-- Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0).
+- Weather data and place search by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0).
+
+## Credits
+
+Open-source libraries we use, each under its own licence: pywbgt (Kyle R. Wodzicki), NumPy, pandas, MetPy, FastAPI, Mangum, pypdf, boto3, Strands Agents, AWS Lambda Powertools, React, Vite, Recharts, lucide-react. The two heat action plan PDFs are public government documents, included unchanged for testing.
 
 ## AI tools used
 
