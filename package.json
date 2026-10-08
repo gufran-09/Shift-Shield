@@ -1,0 +1,14 @@
+{
+  "name": "shiftshield",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "dev": "bash scripts/dev-preview.sh",
+    "install:frontend": "pnpm --filter @shiftshield/frontend install",
+    "build": "pnpm --filter @shiftshield/frontend build",
+    "typecheck": "pnpm --filter @shiftshield/frontend typecheck"
+  },
+  "devDependencies": {
+    "pyright": "^1.1.414"
+  }
+}
