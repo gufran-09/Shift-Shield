@@ -76,6 +76,8 @@ export const api = {
   restWindows: (siteId: string) => request<{ windows: RestWindowRecord[]; disclaimer: string }>(`/api/sites/${enc(siteId)}/rest-windows?limit=24`, { headers: auth(siteId) }),
   acknowledgeRest: (siteId: string, windowId: string) => request<{ acknowledged: boolean; already_acknowledged: boolean; status: RestWindowRecord['status'] }>(`/api/sites/${enc(siteId)}/rest-windows/${enc(windowId)}/ack`, { ...json('POST', {}), headers: { ...jsonHeaders, ...auth(siteId) } }),
   ledger: (siteId: string) => request<LedgerResponse>(`/api/sites/${enc(siteId)}/ledger`, { headers: auth(siteId) }),
+  getCertificate: (siteId: string) => request<{ certificate_id: string; site_name: string; date: string; heat_risk_hours: number; rest_minutes_prescribed: number; rest_minutes_confirmed: number; signature: string; verification_url: string; issuer: string; issued_at: string }>(`/api/sites/${enc(siteId)}/certificate`, { headers: auth(siteId) }),
+  verifyCertificate: (certId: string) => request<{ valid: boolean; status: string; certificate: Record<string, unknown> }>(`/api/certificates/${enc(certId)}`),
   backtest: (siteId: string, payload: { start_date: string; end_date: string; baseline_threshold_c: number; baseline_source: string }) => request<HistoricalBacktestResponse>(`/api/sites/${enc(siteId)}/backtest`, { ...json('POST', payload), headers: { ...jsonHeaders, ...auth(siteId) } }),
   compliance: (siteId: string) => request<ComplianceResponse>(`/api/sites/${enc(siteId)}/compliance`, { headers: auth(siteId) }),
   compare: (siteA: string, siteB: string) => {
