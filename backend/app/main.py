@@ -530,11 +530,16 @@ def public_heat_check(request: PublicCheckRequest) -> dict[str, Any]:
     except Exception as exc:
         raise HTTPException(status_code=503, detail={"error": "heat_estimate_unavailable", "message": f"WBGT estimate unavailable ({type(exc).__name__}); no heat-index fallback was used."}) from exc
     forecast = plan["forecast"]
+    # The forecast starts at local midnight; the public check must describe now, not 00:00.
+    now = _now()
+    now_quarter = now.replace(minute=(now.minute // 15) * 15, second=0, microsecond=0)
+    all_points = plan.get("points", [])
+    upcoming = [point for point in all_points if datetime.fromisoformat(str(point["time"]).replace("Z", "+00:00")) >= now_quarter] or all_points[-1:]
     return {
         "location": {"latitude": request.latitude, "longitude": request.longitude, "timezone": forecast.get("timezone")},
         "forecast": {key: forecast.get(key) for key in ("source", "source_resolution", "fetched_at_utc", "forecast_age_minutes", "timezone", "data_status", "warning")},
-        "current": plan.get("current"),
-        "timeline": plan.get("points", [])[:97],
+        "current": upcoming[0] if upcoming else None,
+        "timeline": upcoming[:97],
         "threshold_status": THRESHOLDS["status"],
         "site_assumption_status": SITE_ADJUSTMENTS["status"],
         "is_demo_only": True,

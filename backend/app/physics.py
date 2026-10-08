@@ -37,6 +37,17 @@ def site_factors(profile: dict[str, Any]) -> dict[str, float]:
     }
 
 
+def _per_row(values: Any, count: int) -> np.ndarray:
+    """Return one float per input row; a scalar library output is repeated, a wrong length is an error."""
+    array = np.asarray(values, dtype=float)
+    if array.ndim == 0:
+        return np.full(count, float(array))
+    array = array.reshape(-1)
+    if array.size != count:
+        raise ValueError(f"WBGT library returned {array.size} values for {count} input rows")
+    return array
+
+
 def calculate_site_wbgt(
     *,
     timestamps: list[str] | list[datetime],
@@ -109,8 +120,12 @@ def calculate_site_wbgt(
         or min_wind_component is None
     ):
         raise ValueError("WBGT library did not return all required thermal and model-input components")
-    globe_c = globe_component.to("degC").magnitude
-    natural_wet_c = wet_bulb_component.to("degC").magnitude
+    globe_c = _per_row(globe_component.to("degC").magnitude, count)
+    natural_wet_c = _per_row(wet_bulb_component.to("degC").magnitude, count)
+    model_solar_w_m2 = _per_row(model_solar_component.to("W/m^2").magnitude, count)
+    wind_2m_m_s = _per_row(wind_2m_component.to("m/s").magnitude, count)
+    # pywbgt returns the minimum-wind floor as a single scalar, not one value per row.
+    min_wind_m_s = _per_row(min_wind_component.to("m/s").magnitude, count)
     margin = float(margin_c if margin_c is not None else SITE_ADJUSTMENTS["uncertainty_margin_c"]["default"])
     if not 0 <= margin <= 5:
         raise ValueError("Uncertainty margin must be between 0°C and 5°C")
@@ -135,9 +150,9 @@ def calculate_site_wbgt(
             "globe_c": round(globe, 2),
             "site_solar_w_m2": round(float(solar_site[index]), 1),
             "site_wind_10m_m_s": round(float(site_wind[index]), 2),
-            "model_adjusted_solar_w_m2": round(float(model_solar_component.to("W/m^2").magnitude[index]), 1),
-            "model_wind_2m_m_s": round(float(wind_2m_component.to("m/s").magnitude[index]), 3),
-            "model_min_wind_m_s": round(float(min_wind_component.to("m/s").magnitude[index]), 3),
+            "model_adjusted_solar_w_m2": round(float(model_solar_w_m2[index]), 1),
+            "model_wind_2m_m_s": round(float(wind_2m_m_s[index]), 3),
+            "model_min_wind_m_s": round(float(min_wind_m_s[index]), 3),
             "method": METHOD,
             "site_factors": factors,
         })
