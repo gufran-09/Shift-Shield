@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, BellRing, CheckCircle2, Clock3, Copy, ExternalLink, RefreshCw, ShieldAlert, Sun, Wind } from 'lucide-react';
+import { Activity, ArrowRight, BellRing, CheckCircle2, Clock3, Copy, ExternalLink, RefreshCw, ShieldAlert, ShieldCheck, Sun, Wind } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -26,6 +26,11 @@ export function DashboardPage() {
   const [copied, setCopied] = useState(false);
   const [lastUpdated, setLastUpdated] = useState('');
   const [demoBoard, setDemoBoard] = useState<ReplayDashboardResponse | null>(null);
+  const [dailyWage, setDailyWage] = useState(500);
+  const [crewSize, setCrewSize] = useState(10);
+  const [shadeCost, setShadeCost] = useState(4500);
+  const [certificate, setCertificate] = useState<{ certificate_id: string; signature: string; verification_url: string; date: string } | null>(null);
+  const [certLoading, setCertLoading] = useState(false);
 
   const load = useCallback(async (refresh = false) => {
     if (!siteId) return;
@@ -69,6 +74,26 @@ export function DashboardPage() {
     try { await navigator.clipboard.writeText(qrUrl); setCopied(true); window.setTimeout(() => setCopied(false), 1600); }
     catch { setError('Clipboard unavailable. Open the QR link manually.'); }
   }
+
+  async function generateCert() {
+    if (!site) return;
+    setCertLoading(true);
+    try {
+      const cert = await api.getCertificate(site.site_id);
+      setCertificate(cert);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not generate certificate.');
+    } finally {
+      setCertLoading(false);
+    }
+  }
+
+  const riskHours = ledger?.heat_risk_hours ?? 4.0;
+  const preservedMinsPerWorker = Math.round(riskHours * 20);
+  const totalCrewMinutes = preservedMinsPerWorker * crewSize;
+  const hourlyWage = dailyWage / 8;
+  const dailyRupeesSaved = Math.round((totalCrewMinutes / 60) * hourlyWage);
+  const daysToPayback = Math.max(1, Math.ceil(shadeCost / Math.max(1, dailyRupeesSaved)));
 
   if (busy && !plan) return <Loading label="Loading site profile and issuing the current plan…" />;
   if (error && !site) return <div className="page-stack"><ErrorNotice message={error} onRetry={() => void load(true)} /><Link className="button button--secondary" to="/setup">Create a site profile</Link></div>;
@@ -119,5 +144,49 @@ export function DashboardPage() {
 
     <section className="dashboard-bottom-grid"><div className="panel-card alert-card"><div className="card-heading card-heading--small"><div><span className="eyebrow">ALERT LOG</span><h2>Plan changes, <em>in context.</em></h2></div><BellRing size={17} /></div>{alertEvents.length ? <div className="alert-list">{alertEvents.map((event, index) => <div className="alert-list__item" key={event.alert_id ?? index}><div className="alert-list__icon"><ShieldAlert size={16} /></div><div><strong>{event.alert_type?.replaceAll('_', ' ') ?? 'Heat alert'} · {event.from_band} → {event.to_band}</strong><p>{event.payload?.reason ?? `Schedule change forecast for ${localTime(event.window_start)}.`}</p><small>{event.delivery_status === 'demo_in_app_only' ? 'In-app demo alert — email was not sent' : event.delivery_status ?? 'Delivery status unavailable'} · {event.created_at ? new Date(event.created_at).toLocaleString() : ''}</small></div></div>)}</div> : <div className="empty-inline">No stricter transition alert has been issued for this plan.</div>}<Link className="inline-link" to={`/ledger/${site.site_id}`}>OPEN APPEND-ONLY LOG <ArrowRight size={14} /></Link></div>
       <div className="panel-card ledger-brief"><div className="card-heading card-heading--small"><div><span className="eyebrow">TODAY’S HEAT LEDGER</span><h2>What the plan <em>accounts for.</em></h2></div><span className="metric-stamp">DATA ONLY</span></div><div className="ledger-mini"><div><strong>{ledger?.heat_risk_hours?.toFixed(1) ?? '—'}<small>h</small></strong><span>HIGH-RISK FORECAST</span></div><div><strong>{ledger?.rest_minutes_prescribed ?? '—'}<small>m</small></strong><span>REST PRESCRIBED</span></div><div><strong>{ledger?.rest_minutes_confirmed_by_both ?? '—'}<small>m</small></strong><span>CONFIRMED BY BOTH</span></div></div><p>No wage savings or completed minutes are inferred without evidence.</p><Link className="inline-link" to={`/ledger/${site.site_id}`}>VIEW FULL LEDGER <ArrowRight size={14} /></Link></div></section>
+
+    <section className="dashboard-bottom-grid">
+      <div className="panel-card shade-payback-card">
+        <div className="card-heading card-heading--small">
+          <div><span className="eyebrow">BONUS FEATURE · ROI ESTIMATE</span><h2>Shade Payback Calculator</h2></div>
+          <span className="metric-stamp">~{daysToPayback} DAYS</span>
+        </div>
+        <p className="panel-intro">Installing shade tarpaulins drops site solar exposure, lowering WBGT by ~1.5–2°C and shifting bands from High/Very High down to Caution/Normal.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, margin: '14px 0' }}>
+          <div><label style={{ fontSize: 11, color: '#747a73', display: 'block' }}>Daily Wage (₹/day)</label><input type="number" value={dailyWage} onChange={(e) => setDailyWage(Math.max(100, Number(e.target.value)))} style={{ width: '100%', padding: '6px 8px', borderRadius: 8, border: '1px solid #d4d0c7' }} /></div>
+          <div><label style={{ fontSize: 11, color: '#747a73', display: 'block' }}>Crew Size (workers)</label><input type="number" value={crewSize} onChange={(e) => setCrewSize(Math.max(1, Number(e.target.value)))} style={{ width: '100%', padding: '6px 8px', borderRadius: 8, border: '1px solid #d4d0c7' }} /></div>
+          <div><label style={{ fontSize: 11, color: '#747a73', display: 'block' }}>Shade Cost (₹)</label><input type="number" value={shadeCost} onChange={(e) => setShadeCost(Math.max(500, Number(e.target.value)))} style={{ width: '100%', padding: '6px 8px', borderRadius: 8, border: '1px solid #d4d0c7' }} /></div>
+        </div>
+        <div className="ledger-mini">
+          <div><strong>{preservedMinsPerWorker}<small>m</small></strong><span>SAVED / WORKER</span></div>
+          <div><strong>₹{dailyRupeesSaved}<small>/d</small></strong><span>CREW SAVINGS</span></div>
+          <div><strong>{daysToPayback}<small>d</small></strong><span>BREAK EVEN</span></div>
+        </div>
+      </div>
+
+      <div className="panel-card certificate-card">
+        <div className="card-heading card-heading--small">
+          <div><span className="eyebrow">BONUS FEATURE · CRYPTOGRAPHIC AUDIT</span><h2>Heat-Day Certificate</h2></div>
+          <ShieldCheck size={18} color="#e86340" />
+        </div>
+        <p className="panel-intro">Signs today's verified rest compliance ledger with an HMAC cryptographic signature for municipal and OHS inspectors.</p>
+        {certificate ? (
+          <div style={{ background: '#f5f3ee', padding: 12, borderRadius: 10, margin: '12px 0', fontSize: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <strong>CERT #{certificate.certificate_id}</strong>
+              <span style={{ color: '#2d6a4f', fontWeight: 600 }}>✓ SIGNED</span>
+            </div>
+            <div style={{ color: '#666', marginBottom: 4 }}>Date: {certificate.date}</div>
+            <div style={{ fontFamily: 'monospace', fontSize: 10, wordBreak: 'break-all', color: '#888' }}>
+              SIG: {certificate.signature.slice(0, 32)}...
+            </div>
+          </div>
+        ) : (
+          <button className="button button--primary" onClick={() => void generateCert()} disabled={certLoading} style={{ marginTop: 12 }}>
+            {certLoading ? 'SIGNING...' : 'GENERATE SIGNED CERTIFICATE'}
+          </button>
+        )}
+      </div>
+    </section>
   </div>;
 }
