@@ -1,0 +1,407 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ShiftShield - Serverless Heat-Stress Decision Support & Proof-of-Rest Platform
+  Team EcoNexus (WeMakeDevs x AWS Environmental Hacks 2026, Track 02)
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment stage environment.
+  AppMode:
+    Type: String
+    Default: demo
+    AllowedValues: [demo, field]
+    Description: ShiftShield runtime mode (demo or field).
+  FrontendOrigin:
+    Type: String
+    Default: "*"
+    Description: Allowed origin for CORS headers.
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+    Tracing: Active
+    Environment:
+      Variables:
+        STORAGE_BACKEND: dynamodb
+        SHIFTSHIELD_MODE: !Ref AppMode
+        TABLE_SITES: !Ref SitesTable
+        TABLE_SITE_STATE: !Ref SiteStateTable
+        TABLE_ALERT_KEYS: !Ref AlertKeysTable
+        TABLE_ISSUE_LOG: !Ref IssueLogTable
+        TABLE_ACKS: !Ref AcksTable
+        TABLE_REST_CONFIRMS: !Ref RestConfirmsTable
+        TABLE_RULEBOOKS: !Ref RulebooksTable
+        TABLE_OBLIGATION_LOG: !Ref ObligationLogTable
+        TABLE_REPLAY_RUNS: !Ref ReplayRunsTable
+        SNS_ALERT_TOPIC_ARN: !Ref AlertTopic
+        WEB_ORIGINS: !Ref FrontendOrigin
+        ACK_SIGNING_SECRET_ARN: !Ref AckSigningSecret
+
+Resources:
+  # ---------------------------------------------------------------------------
+  # DynamoDB Tables (PAY_PER_REQUEST, Exact Primary / Sort Keys, TTL on alert_keys)
+  # ---------------------------------------------------------------------------
+  SitesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub shiftshield-${Environment}-sites
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: site_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: site_id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  SiteStateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub shiftshield-${Environment}-site-state
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: site_id
+          AttributeType: S
+        - AttributeName: state_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: site_id
+          KeyType: HASH
+        - AttributeName: state_key
+          KeyType: RANGE
+
+  AlertKeysTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub shiftshield-${Environment}-alert-keys
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: idempotency_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: idempotency_key
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  IssueLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub shiftshield-${Environment}-issue-log
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: site_id
+          AttributeType: S
+        - AttributeName: issue_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: site_id
+          KeyType: HASH
+        - AttributeName: issue_id
+          KeyType: RANGE
+
+  AcksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub shiftshield-${Environment}-acks
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: alert_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: alert_id
+          KeyType: HASH
+
+  RestConfirmsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub shiftshield-${Environment}-rest-confirms
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: rest_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: rest_key
+          KeyType: HASH
+
+  RulebooksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub shiftshield-${Environment}-rulebooks
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: plan_id
+          AttributeType: S
+        - AttributeName: rule_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: plan_id
+          KeyType: HASH
+        - AttributeName: rule_id
+          KeyType: RANGE
+
+  ObligationLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub shiftshield-${Environment}-obligation-log
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: site_id
+          AttributeType: S
+        - AttributeName: obligation_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: site_id
+          KeyType: HASH
+        - AttributeName: obligation_key
+          KeyType: RANGE
+
+  ReplayRunsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub shiftshield-${Environment}-replay-runs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: run_id
+          AttributeType: S
+        - AttributeName: event_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: run_id
+          KeyType: HASH
+        - AttributeName: event_id
+          KeyType: RANGE
+
+  # ---------------------------------------------------------------------------
+  # Security: Secrets Manager for HMAC Token Signing
+  # ---------------------------------------------------------------------------
+  AckSigningSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub shiftshield-${Environment}-ack-signing-secret
+      Description: Secret key used to sign one-tap supervisor acknowledgment tokens
+      GenerateSecretString:
+        SecretStringTemplate: '{"description": "shiftshield-ack-signer"}'
+        GenerateStringKey: "secret"
+        PasswordLength: 48
+        ExcludePunctuation: true
+
+  # ---------------------------------------------------------------------------
+  # Notification: SNS Topic for Supervisor Heat Alerts
+  # ---------------------------------------------------------------------------
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub shiftshield-${Environment}-alerts
+      DisplayName: ShiftShield Heat Alerts
+
+  # ---------------------------------------------------------------------------
+  # HTTP API Gateway (v2)
+  # ---------------------------------------------------------------------------
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref FrontendOrigin
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+        MaxAge: 600
+
+  # ---------------------------------------------------------------------------
+  # API Lambda Function (FastAPI + Mangum)
+  # ---------------------------------------------------------------------------
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: app.lambda_handler.handler
+      Description: ShiftShield REST API handler powered by FastAPI and Mangum
+      Events:
+        ProxyRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+        RootRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /
+            Method: ANY
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SitesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SiteStateTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AlertKeysTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IssueLogTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AcksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RestConfirmsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RulebooksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ObligationLogTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReplayRunsTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt AlertTopic.TopicName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:CreateTopic
+                - sns:Subscribe
+                - sns:Unsubscribe
+                - sns:ListSubscriptionsByTopic
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref AckSigningSecret
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: "*"
+
+  # ---------------------------------------------------------------------------
+  # Evaluator Lambda Function (Scheduled every 15 minutes)
+  # ---------------------------------------------------------------------------
+  EvaluatorDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub shiftshield-${Environment}-evaluator-dlq
+      MessageRetentionPeriod: 1209600
+
+  EvaluatorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: app.evaluator.handler
+      Timeout: 60
+      MemorySize: 512
+      Description: 15-minute scheduled evaluator calculating site heat-stress and transitions
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn: !GetAtt EvaluatorDeadLetterQueue.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SitesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SiteStateTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AlertKeysTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IssueLogTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AcksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RestConfirmsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RulebooksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ObligationLogTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReplayRunsTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt AlertTopic.TopicName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref AckSigningSecret
+
+  # ---------------------------------------------------------------------------
+  # EventBridge Scheduler Schedule (15-Minute Trigger)
+  # ---------------------------------------------------------------------------
+  EvaluationSchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub shiftshield-${Environment}-evaluator-scheduler-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeEvaluatorLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt EvaluatorFunction.Arn
+
+  FifteenMinuteSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: !Sub shiftshield-${Environment}-15m-evaluation
+      Description: Triggers ShiftShield evaluator every 15 minutes
+      ScheduleExpression: "rate(15 minutes)"
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      Target:
+        Arn: !GetAtt EvaluatorFunction.Arn
+        RoleArn: !GetAtt EvaluationSchedulerRole.Arn
+        DeadLetterConfig:
+          Arn: !GetAtt EvaluatorDeadLetterQueue.Arn
+        RetryPolicy:
+          MaximumRetryAttempts: 2
+          MaximumEventAgeInSeconds: 300
+
+  # ---------------------------------------------------------------------------
+  # CloudWatch Alarms for Monitoring
+  # ---------------------------------------------------------------------------
+  EvaluatorErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub shiftshield-${Environment}-evaluator-errors
+      AlarmDescription: Alarms when evaluator encounters unhandled errors
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref EvaluatorFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+Outputs:
+  HttpApiUrl:
+    Description: HTTP API Gateway endpoint base URL
+    Value: !GetAtt HttpApi.ApiEndpoint
+  ApiFunctionArn:
+    Description: API Lambda Function ARN
+    Value: !GetAtt ApiFunction.Arn
+  EvaluatorFunctionArn:
+    Description: Evaluator Lambda Function ARN
+    Value: !GetAtt EvaluatorFunction.Arn
+  AlertTopicArn:
+    Description: SNS Alert Topic ARN
+    Value: !Ref AlertTopic
