@@ -31,7 +31,7 @@ export function App() {
           <Route path="compliance/:siteId" element={<CompliancePage />} />
           <Route path="ledger/:siteId" element={<LedgerPage />} />
           <Route path="replay" element={<ReplayPage />} />
-          <Route path="demo" element={<Navigate to="/replay" replace />} />
+          <Route path="demo" element={<Navigate to="/replay?auto=1" replace />} />
           <Route path="rulebooks" element={<RulebooksPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
