@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.pnpm-store/
+
+# Local application data and secrets
+*.sqlite3
+*.db
+.env
+.env.*
+!.env.example
+.aws/
+
+# Build outputs
+.aws-sam/
+.DS_Store
+*.tsbuildinfo
