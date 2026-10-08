@@ -34,7 +34,7 @@ Heavy work, acclimatized crew, light concrete, unknown land use (+2 C), partial/
 ## What it shows
 
 - **The heat-stress peak came before the hottest air.** WBGT peaked at 10:00 to 11:00 (35.0 C in sun, 33.4 C shaded), while air temperature peaked at 14:00. Morning humidity (31 to 42 %) offsets the lower air temperature.
-- **Fixed rest windows cover a small part of the risky day.** For heavy work, 12 of 14 daylight hours were High or worse. Telangana's "avoid 12 noon to 3 PM" (HAP 2021, p.36) covers 3 of them; Delhi's "12 to 4 PM" (HAP 2025, p.155) covers 4. Both miss 06:00 to 11:00.
+- **Fixed rest windows cover a small part of the risky day.** For heavy work, 12 of 14 daylight hours were High or worse. Telangana's "avoid 12 noon to 3 PM" (HAP 2021, p.35) covers 3 of them; Delhi's "12 to 4 PM" (HAP 2025, p.155) covers 4. Both miss 06:00 to 11:00.
 - **Honest limits:** archive/reanalysis is not an on-site reading and runs 2 to 3 C below reported station maxima; the site factors (+2 C land use, reflected-sun factor, wind factor) are provisional demo assumptions; heavy work is the strictest common case. Say "this estimate suggests", not "workers were in danger".
 - Sameer's stdlib reference engine (no land-use delta) found the same shape: peak 09:00 to 11:00 at a shaded site.
 

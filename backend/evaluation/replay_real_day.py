@@ -19,7 +19,7 @@ from app.weather import historical_15m
 
 # Fixed "peak hours" windows quoted from the heat action plans (local time, [start, end)).
 FIXED_WINDOWS = {
-    "Telangana HAP 2021 p.36 (12 noon to 3 PM)": (12, 15),
+    "Telangana HAP 2021 p.35 (12 noon to 3 PM)": (12, 15),
     "Delhi HAP 2025 p.155 (12 to 4 PM)": (12, 16),
 }
 RISKY = {"high", "very_high"}
