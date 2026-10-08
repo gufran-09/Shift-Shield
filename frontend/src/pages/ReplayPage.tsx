@@ -29,13 +29,25 @@ export function ReplayPage() {
         if (requestedRun) {
           const state = await api.replayState(requestedRun);
           if (live) { setRunId(requestedRun); setRunState(state); setActive(state.current_step); setComplete(state.current_step >= result.steps.length - 1); }
+        } else if (searchParams.get('auto') === '1') {
+          try {
+            const run = await api.startReplay();
+            if (live) {
+              setRunId(run.run_id);
+              setSearchParams({ run: run.run_id });
+              setManifest((old) => old ? { ...old, steps: run.steps, sites: [run.site_a, run.site_b], disclaimer: run.disclaimer } : old);
+              setPlaying(true);
+            }
+          } catch (autoErr) {
+            if (live) setError(autoErr instanceof Error ? autoErr.message : 'Could not auto-start replay.');
+          }
         }
       } catch (err) { if (live) setError(err instanceof Error ? err.message : 'The replay is unavailable.'); }
       finally { if (live) setLoading(false); }
     }
     void initialize();
     return () => { live = false; };
-  }, [requestedRun]);
+  }, [requestedRun, searchParams, setSearchParams]);
 
   async function start() {
     setError(''); setComplete(false); setPlaying(false); setActive(-1); setRunState(null); setLoading(true);
