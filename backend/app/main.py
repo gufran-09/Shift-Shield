@@ -699,6 +699,55 @@ def site_ledger(site_id: str, authorization: str | None = Header(default=None, a
     return result
 
 
+@app.get("/api/sites/{site_id}/certificate")
+def site_certificate(site_id: str, authorization: str | None = Header(default=None, alias="Authorization")) -> dict[str, Any]:
+    site = _authorize(site_id, authorization)
+    ledger_data = site_ledger(site_id, authorization=authorization)
+    date_val = str(ledger_data.get("date", _now().date().isoformat()))
+    cert_id = f"cert-{hashlib.sha256(f'{site_id}|{date_val}'.encode()).hexdigest()[:16]}"
+    payload = {
+        "certificate_id": cert_id,
+        "site_id": site_id,
+        "site_name": site.get("name", "Site"),
+        "date": date_val,
+        "heat_risk_hours": float(ledger_data.get("heat_risk_hours", 0) or 0),
+        "rest_minutes_prescribed": int(ledger_data.get("rest_minutes_prescribed", 0) or 0),
+        "rest_minutes_confirmed": int(ledger_data.get("rest_minutes_confirmed_by_both", 0) or 0),
+        "issued_at": _now().isoformat(),
+        "issuer": "ShiftShield Verified Rest Record",
+    }
+    canonical = json.dumps(payload, sort_keys=True)
+    signature = hmac.new(b"shiftshield-heat-cert-v1", canonical.encode(), hashlib.sha256).hexdigest()
+    cert_record = {
+        **payload,
+        "signature": signature,
+        "verification_url": f"/verify/{cert_id}",
+    }
+    store.put("site_state", {
+        "site_id": site_id,
+        "state_key": f"certificate:{cert_id}",
+        "certificate": cert_record,
+    })
+    return cert_record
+
+
+@app.get("/api/certificates/{certificate_id}")
+def verify_certificate(certificate_id: str) -> dict[str, Any]:
+    records = store.list("site_state")
+    found = next((item.get("certificate") for item in records if item.get("state_key") == f"certificate:{certificate_id}"), None)
+    if not found:
+        raise HTTPException(status_code=404, detail={"error": "certificate_not_found", "message": "Certificate not found."})
+    to_verify = {k: v for k, v in found.items() if k not in {"signature", "verification_url"}}
+    canonical = json.dumps(to_verify, sort_keys=True)
+    expected_sig = hmac.new(b"shiftshield-heat-cert-v1", canonical.encode(), hashlib.sha256).hexdigest()
+    is_valid = hmac.compare_digest(str(found.get("signature", "")), expected_sig)
+    return {
+        "valid": is_valid,
+        "certificate": found,
+        "status": "cryptographically_verified" if is_valid else "tampered_or_invalid",
+    }
+
+
 @app.post("/api/sites/{site_id}/backtest")
 def site_backtest(site_id: str, request: HistoricalBacktestRequest, authorization: str | None = Header(default=None, alias="Authorization")) -> dict[str, Any]:
     site = _authorize(site_id, authorization)
