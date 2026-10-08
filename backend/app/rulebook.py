@@ -108,7 +108,7 @@ def invoke_candidates(pages: dict[int, str], *, plan_version: str) -> list[dict[
     from strands import Agent
     from strands.models import BedrockModel
 
-    model = BedrockModel(model_id=model_id, region_name=AWS_REGION, temperature=0, streaming=False)
+    model = BedrockModel(model_id=model_id, region_name=os.getenv("BEDROCK_REGION", AWS_REGION), temperature=0, streaming=False)
     agent = Agent(
         model=model,
         system_prompt=(
