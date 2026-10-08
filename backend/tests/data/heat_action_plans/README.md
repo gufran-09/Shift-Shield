@@ -25,5 +25,6 @@
 - PDF page number equals printed page number.
 - **The labour rules give two different peak windows:** "12 Noon to 3 PM" (p.35) and "peak afternoon hours (11pm – 3pm) during a heat alert" (p.59), where "11pm" is apparently a typo for 11 AM. Other departments use 12 to 4 PM (TSRTC, pp.36, 59) and the public advice says 12.00 noon to 3.00 p.m. (p.99).
 - Page 72 suggests an "extended afternoon break or alternate working hours", and page 100 tells employers to "increase the frequency and length of rest breaks", but no page says how long or how often. ShiftShield's NIOSH schedule fills exactly that gap.
+- **pypdf 6.x splits some words with a space** (p.35 "drink ing", "work ers"; p.59 "constructi on"), so the app's whitespace-only `verify_quote` rejects three correct quotes (T08, T09, T17). pypdf 5.x reads them fine. Comparing with all whitespace removed fixes it without loosening wording or punctuation; consider that in `verify_quote` too.
 - Quotes keep the plan's own spelling ("constriction workers", "contactors", "causalities").
 - A 2025 Telangana plan was released on 2 May 2025 but we could not find it published online, so this is the latest plan we can cite.
