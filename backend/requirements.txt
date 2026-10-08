@@ -1,0 +1,13 @@
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+mangum==0.22.0
+pywbgt==3.0.7
+numpy==2.5.3
+pandas==3.0.6
+metpy==1.6.3
+pypdf==6.19.0
+boto3==1.43.103
+strands-agents==1.58.1
+httpx==0.28.1
+python-multipart==0.0.32
+aws-lambda-powertools==3.35.0
