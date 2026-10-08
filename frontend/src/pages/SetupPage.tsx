@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { ErrorNotice, SafetyNotice } from '../components/Primitives';
+import { PlaceSearch } from '../components/PlaceSearch';
 import type { SiteProfile } from '../types';
 
 type Created = { site: SiteProfile; supervisor_token: string; supervisor_token_notice: string; email_status: string };
@@ -51,6 +52,7 @@ export function SetupPage() {
     <SafetyNotice>Site adjustments and threshold charts are demo-only, not calibrated site measurements. Professional review is required before field use.</SafetyNotice>
     <form className="setup-form" onSubmit={submit}>
       <div className="setup-form__section"><div className="setup-form__section-head"><span>01</span><div><h2>Where is the work?</h2><p>Site name, coordinates and local timezone.</p></div></div>
+        <PlaceSearch onPick={(place) => { set('latitude', place.latitude); set('longitude', place.longitude); if (place.timezone) set('timezone', place.timezone); }} />
         <div className="form-grid form-grid--three"><label>Worksite name<input required minLength={2} maxLength={100} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. South Yard — Packing" /></label><label>Latitude<input type="number" step="any" min="-90" max="90" value={form.latitude} onChange={(e) => set('latitude', Number(e.target.value))} required /></label><label>Longitude<input type="number" step="any" min="-180" max="180" value={form.longitude} onChange={(e) => set('longitude', Number(e.target.value))} required /></label><label>Time zone<input value={form.timezone} onChange={(e) => set('timezone', e.target.value)} required placeholder="Asia/Kolkata" /></label></div>
       </div>
       <div className="setup-form__section"><div className="setup-form__section-head"><span>02</span><div><h2>What is the crew working in?</h2><p>Choose the nearest match. Don’t guess about protective clothing.</p></div></div>

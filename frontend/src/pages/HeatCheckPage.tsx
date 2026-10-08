@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../api';
 import { BandPill, ErrorNotice, Loading, SafetyNotice } from '../components/Primitives';
+import { PlaceSearch } from '../components/PlaceSearch';
 import { RouteHint } from '../components/RouteHint';
 import type { PublicHeatCheckResponse } from '../types';
 
@@ -76,6 +77,7 @@ export function HeatCheckPage() {
       <div className="check-form-wrap"><div className="check-form-header"><div><span className="eyebrow">STEP 01 / SITE CONDITIONS</span><h3>Check heat risk</h3></div><span className="form-time"><span className="online-dot" /> ~10 SEC</span></div>
         <form className="check-form" onSubmit={submit}>
           <div className="form-section-label"><MapPin size={15} /> LOCATION</div>
+          <PlaceSearch onPick={(place) => { set('latitude', place.latitude); set('longitude', place.longitude); if (place.timezone) set('timezone', place.timezone); setGeoMessage(''); }} />
           <div className="form-grid form-grid--location"><label>Latitude<input type="number" step="any" min="-90" max="90" value={form.latitude} onChange={(event) => set('latitude', Number(event.target.value))} required /></label><label>Longitude<input type="number" step="any" min="-180" max="180" value={form.longitude} onChange={(event) => set('longitude', Number(event.target.value))} required /></label><button type="button" className="location-btn" onClick={locate}><Crosshair size={15} /> Use my location</button></div>
           {geoMessage && <p className="inline-hint" role="status">{geoMessage}</p>}
           <div className="form-section-label"><Sun size={15} /> WORKSITE PROFILE</div>
