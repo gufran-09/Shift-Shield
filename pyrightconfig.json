@@ -1,0 +1,7 @@
+{
+  "include": ["backend/app", "backend/tests"],
+  "extraPaths": ["/home/ubuntu/shiftshield/backend"],
+  "venvPath": "/home/ubuntu/shiftshield",
+  "venv": ".venv",
+  "pythonVersion": "3.12"
+}
