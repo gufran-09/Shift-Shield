@@ -48,11 +48,16 @@ class InvalidQuote(ValueError):
 
 
 def _normalise_whitespace(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip()
+    text = (
+        text.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+        .replace("–", "-").replace("—", "-")
+    )
+    text = re.sub(r"\s+", " ", text).strip()
+    return re.sub(r"\s*-\s*", "-", text)
 
 
 def verify_quote(pages: dict[int, str], page_number: int, quote: str) -> bool:
-    """Allow only whitespace normalization; punctuation and wording must match."""
+    """Allow whitespace and hyphen normalization; wording and punctuation must match."""
     if page_number not in pages or not quote.strip():
         return False
     return _normalise_whitespace(quote) in _normalise_whitespace(pages[page_number])
