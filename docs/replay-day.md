@@ -12,12 +12,12 @@ Use one milder day from the same list as the control day.
 
 `cd backend && python -m evaluation.replay_real_day --date 2024-05-04 [--shade mostly]`
 
-Heavy work, acclimatized crew, light concrete, unknown land use (+2 C), partial/unknown wind, 1 C margin. Thresholds: chart-reading version v1 (before the NIOSH-equation patch). Hourly, local time.
+Heavy work, acclimatized crew, light concrete, unknown land use (+2 C), partial/unknown wind, 1 C margin. Thresholds: NIOSH-equation version v2 (`NIOSH-2016-106-equations-v2-demo-2026-10-08`). Hourly, local time.
 
 | Time | Air C | RH % | WBGT full sun | Schedule | WBGT mostly shaded | Schedule |
 |---|---|---|---|---|---|---|
 | 06:00 | 27.1 | 79 | 27.1 | High 30/30 | 26.6 | High 30/30 |
-| 07:00 | 30.0 | 67 | 30.0 | Stop | 28.8 | Stop |
+| 07:00 | 30.0 | 67 | 30.0 | Stop | 28.8 | Very high 15/45 |
 | 08:00 | 33.2 | 53 | 32.7 | Stop | 30.9 | Stop |
 | 09:00 | 35.7 | 42 | 34.5 | Stop | 32.5 | Stop |
 | 10:00 | 38.0 | 31 | **35.0** | Stop | 33.2 | Stop |
@@ -27,7 +27,7 @@ Heavy work, acclimatized crew, light concrete, unknown land use (+2 C), partial/
 | 14:00 | **41.4** | 16 | 34.5 | Stop | 32.7 | Stop |
 | 15:00 | 41.4 | 15 | 33.8 | Stop | 31.8 | Stop |
 | 16:00 | 40.7 | 14 | 31.7 | Stop | 29.9 | Stop |
-| 17:00 | 39.1 | 14 | 29.1 | Stop | 27.6 | Very high 15/45 |
+| 17:00 | 39.1 | 14 | 29.1 | Very high 15/45 | 27.6 | Very high 15/45 |
 | 18:00 | 36.3 | 14 | 25.2 | Caution 45/15 | 24.5 | Normal |
 | 19:00 | 32.1 | 23 | 22.4 | Normal | 22.4 | Normal |
 
