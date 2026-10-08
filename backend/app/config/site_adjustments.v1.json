@@ -1,0 +1,17 @@
+{
+  "version": "site-adjustments-v1-demo-2026-10-08",
+  "status": "PROVISIONAL DEMO ASSUMPTIONS — NOT FIELD CALIBRATED",
+  "source_note": "Copied from the supplied ShiftShield Plan v7 starting assumptions. They are not claimed as independently validated constants. Site-specific WBGT estimates are not sensor readings.",
+  "formula": {
+    "solar_site_w_m2": "(1 - shade_fraction) * direct_radiation + diffuse_radiation + surface_factor * total_shortwave_radiation",
+    "air_temperature_site_c": "air_temperature_c + land_use_delta_c",
+    "relative_humidity_site": "recompute at the same water-vapor pressure",
+    "wind_site_m_s": "wind_10m_m_s * wind_factor"
+  },
+  "shade_fraction": {"minimum": 0.0, "maximum": 0.8, "none": 0.0, "partial": 0.4, "mostly": 0.8, "unknown_default": 0.0, "indoor_no_sun": 1.0},
+  "surface_factor": {"bare_soil": 0.05, "grass": 0.05, "asphalt": 0.25, "light_concrete": 0.25, "dark_concrete": 0.25, "mixed": 0.25, "unknown_default": 0.25, "range_note": "The source plan gives grass about 0.05 and light concrete about 0.20–0.25; other rows use the upper stated value as an explicitly assumed conservative demo default."},
+  "land_use_delta_c": {"vegetated": 0.0, "dense_built_up": 2.0, "unknown_default": 2.0, "range_note": "Plan v7 assumption about 0 to +2°C; not a local measured correction."},
+  "wind_factor": {"open": 1.0, "sheltered": 0.4, "partial_or_unknown": 0.4, "range_note": "Plan v7 assumption about 1.0 open to 0.4 sheltered; unknown defaults to the lower-wind case."},
+  "uncertainty_margin_c": {"default": 1.0, "range_note": "Plan v7 starting value near 1°C; configurable and disclosed. It is not an official NIOSH margin."},
+  "sensitivity": {"test_margin_c": [0.5, 1.0, 1.5], "test_shade_fractions": [0.0, 0.4, 0.8], "test_wind_factors": [0.4, 1.0]}
+}
