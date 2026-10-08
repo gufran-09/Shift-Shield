@@ -1,0 +1,63 @@
+# ShiftShield
+
+**The heat alert that proves the rest happened.** Environmental Hacks 2026 (WeMakeDevs × AWS), Track 02: Heat and Water. Team EcoNexus: Sameer Ahmed, Gufran.
+
+Outdoor workers in Indian cities get heat advice as a fixed rule: "avoid work from 12 noon to 3 PM". ShiftShield turns a worksite's real conditions into a work-rest schedule, warns about an hour before it tightens, and keeps a record of whether the break happened.
+
+> Decision support only, not medical or legal advice. Thresholds are pending occupational-safety review. Not for field use without a qualified review.
+
+## Why fixed windows are not enough
+
+Real archived weather for Hyderabad, 4 May 2024 (the hottest day of April to June 2024 in Open-Meteo's archive), run through this app's own pipeline for a heavy-work site:
+
+- Heat stress (WBGT) peaked at **10 to 11 AM**; the air peaked at 2 PM.
+- **12 of 14 daylight hours** were High or above. Telangana's "12 noon to 3 PM" covers 3 of them; Delhi's "12 to 4 PM" covers 4.
+
+Archive/reanalysis is not an on-site reading, and the site adjustments are provisional. Full table and caveats: [`docs/replay-day.md`](docs/replay-day.md). Reproduce: `cd backend && python -m evaluation.replay_real_day --date 2024-05-04`.
+
+## What it does
+
+- **Public heat check, no login.** Site-specific WBGT estimate (Liljegren et al. 2008, via pywbgt) from the Open-Meteo forecast plus shade, surface, land use and wind, with a 1 °C safety margin.
+- **NIOSH work-rest schedule.** Bands A Normal 60/0, B Caution 45/15, C High 30/30, D Very high 15/45, and Stop above the 15-minute limit. Unknown acclimatisation uses the stricter RAL curve.
+- **Alert about an hour ahead** when the schedule is about to tighten.
+- **Proof of rest.** The supervisor acknowledges each break; workers confirm anonymously by QR (no names, phones or device IDs; counts hidden until three responses).
+- **Symptom buttons only tighten** the plan, never ease it.
+- **Rulebook agent.** Reads a heat action plan PDF and proposes rules, each with its exact quote and page. A person approves every rule. The app applies whichever is stricter, the plan or the physiology.
+- **Self-playing demo** with clearly labelled synthetic data.
+
+## Evidence
+
+| Check | Result | How to run |
+|---|---|---|
+| WBGT vs an independent pure-Python Liljegren implementation (5 cases, Hyderabad) | differences +0.45, +0.23, +0.30, −0.01, +0.32 °C (tolerance 1.5) | `cd backend && python -m pytest tests/test_wbgt_crosscheck.py -v -s` |
+| Physical sanity: more humidity, less shade or less wind never lowers WBGT in sun | pass | same file |
+| Rulebook answer key: Delhi HAP 2025, every row checked by hand against the PDF page | complete; scanned pages flagged | `tests/test_rulebook_answer_key.py` |
+| Rulebook agent recall / precision on the Delhi plan | _pending Bedrock run_ | `python -m evaluation.score_rulebook candidates.json tests/data/heat_action_plans/delhi_hap_2025_obligations.csv` |
+
+## Run locally
+
+Requires Python 3.12 (numpy 2.5.3), Node and pnpm.
+
+```
+python -m venv .venv && source .venv/bin/activate
+pip install -r backend/requirements-dev.txt
+pnpm install
+pnpm dev                      # API on :8000, web on :3000
+cd backend && python -m pytest -q
+```
+
+## Architecture on AWS
+
+_Gufran to fill in once deployed (region ap-south-1, Mumbai)._
+
+## Sources
+
+- NIOSH (2016). *Criteria for a Recommended Standard: Occupational Exposure to Heat and Hot Environments*, DHHS (NIOSH) Publication 2016-106. RAL/REL equations, section 8.1.
+- Liljegren, J. C. et al. (2008). Modeling the wet bulb globe temperature using standard meteorological measurements. *J. Occup. Environ. Hyg.* 5(10).
+- Delhi Disaster Management Authority, Heat Action Plan 2025. Government of Telangana, Heatwave Action Plan 2021.
+- Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0).
+
+## AI tools used
+
+- **Claude (Anthropic):** research, the reference WBGT engine, test and evaluation code, documentation, debugging (Sameer).
+- _Gufran to add his tools (e.g. Manus)._
