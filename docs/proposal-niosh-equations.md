@@ -1,6 +1,6 @@
 # Proposal: derive the threshold curves from NIOSH's equations
 
-**Status:** proposal for Gufran. Nothing in `backend/app/config/thresholds.v1.json` is changed by this commit.
+**Status:** adopted in threshold version `NIOSH-2016-106-equations-v2-demo-2026-10-08`. All four columns are now computed from the equations (rounded down to 0.1 °C); the old chart readings stay in each row as `chart_reading_cross_check_c`.
 
 ## The source
 

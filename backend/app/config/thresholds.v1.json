@@ -1,6 +1,6 @@
 {
-  "version": "NIOSH-2016-106-curve-transcription-v1-demo-2026-10-08",
-  "status": "DEMO ONLY — GRAPH DIGITIZATION PENDING OCCUPATIONAL-SAFETY REVIEW",
+  "version": "NIOSH-2016-106-equations-v2-demo-2026-10-08",
+  "status": "DEMO ONLY — NIOSH EQUATIONS, PENDING OCCUPATIONAL-SAFETY REVIEW",
   "source": {
     "title": "Criteria for a Recommended Standard: Occupational Exposure to Heat and Hot Environments",
     "publisher": "NIOSH",
@@ -15,7 +15,7 @@
     "clothing_printed_page": 19,
     "water_guidance_page": "executive summary, printed page vi"
   },
-  "transcription_method": "Approximate chart digitization at the class upper-edge metabolic workload shown in Figure 8-1/8-2; thresholds rounded downward to half-degree Celsius increments as a conservative engineering transcription. The figures are curves, not a tabulated schedule. This JSON is not an official NIOSH table and is not approved for field use.",
+  "transcription_method": "Limits computed from NIOSH 2016-106 section 8.1 equations (printed p.93): RAL = 59.9 - 14.1 log10 M, REL = 56.7 - 11.5 log10 M, M in watts (1 kcal/h = 1.163 W), at the class upper-edge workload. For w work minutes per hour, M is the 1-hour time-weighted average (w*M_task + (60-w)*117 W)/60, resting rate from Table 5-1 (p.70); this averaging is ShiftShield's derivation, not a printed NIOSH table. Values are rounded down to 0.1 C (stricter). The earlier Figure 8-1/8-2 chart readings are kept per row as chart_reading_cross_check_c. Not approved for field use.",
   "professional_review": "PENDING",
   "water_guidance": "NIOSH 2016-106 executive summary p. vi: one 8-oz cup of water or other fluid every 15–20 minutes; general source guidance, not individualized advice.",
   "workload_classes": {
@@ -44,10 +44,10 @@
       "source_figure": "8-1",
       "source_page": 94,
       "class_rows": {
-        "light": {"workload_kcal_per_hour": 200, "wbgt_c_at_work_minutes_per_hour": {"60": 27.5, "45": 28.5, "30": 29.5, "15": 30.5}},
-        "moderate": {"workload_kcal_per_hour": 300, "wbgt_c_at_work_minutes_per_hour": {"60": 25.0, "45": 26.0, "30": 27.5, "15": 29.0}},
-        "heavy": {"workload_kcal_per_hour": 400, "wbgt_c_at_work_minutes_per_hour": {"60": 24.0, "45": 24.5, "30": 26.0, "15": 27.5}},
-        "very_heavy": {"workload_kcal_per_hour": 500, "wbgt_c_at_work_minutes_per_hour": {"60": 22.0, "45": 23.0, "30": 25.0, "15": 26.5}}
+        "light": {"workload_kcal_per_hour": 200, "wbgt_c_at_work_minutes_per_hour": {"60": 26.5, "45": 27.3, "30": 28.2, "15": 29.3}, "chart_reading_cross_check_c": {"60": 27.5, "45": 28.5, "30": 29.5, "15": 30.5}},
+        "moderate": {"workload_kcal_per_hour": 300, "wbgt_c_at_work_minutes_per_hour": {"60": 24.0, "45": 25.1, "30": 26.5, "15": 28.2}, "chart_reading_cross_check_c": {"60": 25.0, "45": 26.0, "30": 27.5, "15": 29.0}},
+        "heavy": {"workload_kcal_per_hour": 400, "wbgt_c_at_work_minutes_per_hour": {"60": 22.2, "45": 23.5, "30": 25.1, "15": 27.3}, "chart_reading_cross_check_c": {"60": 24.0, "45": 24.5, "30": 26.0, "15": 27.5}},
+        "very_heavy": {"workload_kcal_per_hour": 500, "wbgt_c_at_work_minutes_per_hour": {"60": 20.9, "45": 22.2, "30": 24.0, "15": 26.5}, "chart_reading_cross_check_c": {"60": 22.0, "45": 23.0, "30": 25.0, "15": 26.5}}
       }
     },
     "acclimatized": {
@@ -55,10 +55,10 @@
       "source_figure": "8-2",
       "source_page": 95,
       "class_rows": {
-        "light": {"workload_kcal_per_hour": 200, "wbgt_c_at_work_minutes_per_hour": {"60": 29.5, "45": 30.5, "30": 31.5, "15": 32.5}},
-        "moderate": {"workload_kcal_per_hour": 300, "wbgt_c_at_work_minutes_per_hour": {"60": 27.5, "45": 28.5, "30": 29.5, "15": 30.5}},
-        "heavy": {"workload_kcal_per_hour": 400, "wbgt_c_at_work_minutes_per_hour": {"60": 26.0, "45": 27.5, "30": 28.5, "15": 29.5}},
-        "very_heavy": {"workload_kcal_per_hour": 500, "wbgt_c_at_work_minutes_per_hour": {"60": 25.0, "45": 26.0, "30": 27.5, "15": 29.0}}
+        "light": {"workload_kcal_per_hour": 200, "wbgt_c_at_work_minutes_per_hour": {"60": 29.4, "45": 30.1, "30": 30.9, "15": 31.8}, "chart_reading_cross_check_c": {"60": 29.5, "45": 30.5, "30": 31.5, "15": 32.5}},
+        "moderate": {"workload_kcal_per_hour": 300, "wbgt_c_at_work_minutes_per_hour": {"60": 27.4, "45": 28.3, "30": 29.4, "15": 30.9}, "chart_reading_cross_check_c": {"60": 27.5, "45": 28.5, "30": 29.5, "15": 30.5}},
+        "heavy": {"workload_kcal_per_hour": 400, "wbgt_c_at_work_minutes_per_hour": {"60": 26.0, "45": 27.0, "30": 28.3, "15": 30.1}, "chart_reading_cross_check_c": {"60": 26.0, "45": 27.5, "30": 28.5, "15": 29.5}},
+        "very_heavy": {"workload_kcal_per_hour": 500, "wbgt_c_at_work_minutes_per_hour": {"60": 24.9, "45": 26.0, "30": 27.4, "15": 29.4}, "chart_reading_cross_check_c": {"60": 25.0, "45": 26.0, "30": 27.5, "15": 29.0}}
       }
     }
   },
