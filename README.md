@@ -48,7 +48,7 @@ cd backend && python -m pytest -q
 
 ## Architecture on AWS
 
-ShiftShield is deployed entirely serverless in **`ap-south-1` (Mumbai)** using AWS Serverless Application Model (SAM):
+ShiftShield deploys serverless to **`ap-south-1` (Mumbai)** with the AWS Serverless Application Model (SAM). AI rule extraction calls Amazon Nova Pro in `us-west-2` (set by `BEDROCK_REGION`), because Bedrock quotas in ap-south-1 were zero for our account; its input is a public government PDF.
 
 ```text
 ┌─────────────────┐       ┌─────────────────┐       ┌──────────────────────┐

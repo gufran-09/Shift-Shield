@@ -29,6 +29,7 @@ export function DashboardPage() {
   const [dailyWage, setDailyWage] = useState(500);
   const [crewSize, setCrewSize] = useState(10);
   const [shadeCost, setShadeCost] = useState(4500);
+  const [minsSavedPerRiskHour, setMinsSavedPerRiskHour] = useState(20);
   const [certificate, setCertificate] = useState<{ certificate_id: string; signature: string; verification_url: string; date: string } | null>(null);
   const [certLoading, setCertLoading] = useState(false);
 
@@ -89,7 +90,7 @@ export function DashboardPage() {
   }
 
   const riskHours = ledger?.heat_risk_hours ?? 4.0;
-  const preservedMinsPerWorker = Math.round(riskHours * 20);
+  const preservedMinsPerWorker = Math.round(riskHours * minsSavedPerRiskHour);
   const totalCrewMinutes = preservedMinsPerWorker * crewSize;
   const hourlyWage = dailyWage / 8;
   const dailyRupeesSaved = Math.round((totalCrewMinutes / 60) * hourlyWage);
@@ -151,12 +152,14 @@ export function DashboardPage() {
           <div><span className="eyebrow">BONUS FEATURE · ROI ESTIMATE</span><h2>Shade Payback Calculator</h2></div>
           <span className="metric-stamp">~{daysToPayback} DAYS</span>
         </div>
-        <p className="panel-intro">Installing shade tarpaulins drops site solar exposure, lowering WBGT by ~1.5–2°C and shifting bands from High/Very High down to Caution/Normal.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, margin: '14px 0' }}>
+        <p className="panel-intro">Installing shade tarpaulins drops site solar exposure, lowering estimated WBGT by about 1.5–2°C in our Hyderabad replay and shifting bands from High/Very High down to Caution/Normal.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, margin: '14px 0' }}>
           <div><label style={{ fontSize: 11, color: '#747a73', display: 'block' }}>Daily Wage (₹/day)</label><input type="number" value={dailyWage} onChange={(e) => setDailyWage(Math.max(100, Number(e.target.value)))} style={{ width: '100%', padding: '6px 8px', borderRadius: 8, border: '1px solid #d4d0c7' }} /></div>
           <div><label style={{ fontSize: 11, color: '#747a73', display: 'block' }}>Crew Size (workers)</label><input type="number" value={crewSize} onChange={(e) => setCrewSize(Math.max(1, Number(e.target.value)))} style={{ width: '100%', padding: '6px 8px', borderRadius: 8, border: '1px solid #d4d0c7' }} /></div>
           <div><label style={{ fontSize: 11, color: '#747a73', display: 'block' }}>Shade Cost (₹)</label><input type="number" value={shadeCost} onChange={(e) => setShadeCost(Math.max(500, Number(e.target.value)))} style={{ width: '100%', padding: '6px 8px', borderRadius: 8, border: '1px solid #d4d0c7' }} /></div>
+          <div><label style={{ fontSize: 11, color: '#747a73', display: 'block' }}>Assumed work min kept / risk hour</label><input type="number" value={minsSavedPerRiskHour} onChange={(e) => setMinsSavedPerRiskHour(Math.min(60, Math.max(0, Number(e.target.value))))} style={{ width: '100%', padding: '6px 8px', borderRadius: 8, border: '1px solid #d4d0c7' }} /></div>
         </div>
+        <p className="panel-intro" style={{ fontSize: 12 }}>Illustrative estimate. The minutes kept per risk hour is an assumption you set, not a measured value.</p>
         <div className="ledger-mini">
           <div><strong>{preservedMinsPerWorker}<small>m</small></strong><span>SAVED / WORKER</span></div>
           <div><strong>₹{dailyRupeesSaved}<small>/d</small></strong><span>CREW SAVINGS</span></div>
@@ -166,10 +169,10 @@ export function DashboardPage() {
 
       <div className="panel-card certificate-card">
         <div className="card-heading card-heading--small">
-          <div><span className="eyebrow">BONUS FEATURE · CRYPTOGRAPHIC AUDIT</span><h2>Heat-Day Certificate</h2></div>
+          <div><span className="eyebrow">BONUS FEATURE · TAMPER-EVIDENT RECORD</span><h2>Heat-Day Certificate</h2></div>
           <ShieldCheck size={18} color="#e86340" />
         </div>
-        <p className="panel-intro">Signs today's verified rest compliance ledger with an HMAC cryptographic signature for municipal and OHS inspectors.</p>
+        <p className="panel-intro">Signs today's rest record (supervisor acknowledgements and anonymous worker counts) with an HMAC signature, so later edits can be detected. It records what was reported; it does not prove a break happened.</p>
         {certificate ? (
           <div style={{ background: '#f5f3ee', padding: 12, borderRadius: 10, margin: '12px 0', fontSize: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
