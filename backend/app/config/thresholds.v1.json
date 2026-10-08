@@ -1,0 +1,72 @@
+{
+  "version": "NIOSH-2016-106-curve-transcription-v1-demo-2026-10-08",
+  "status": "DEMO ONLY — GRAPH DIGITIZATION PENDING OCCUPATIONAL-SAFETY REVIEW",
+  "source": {
+    "title": "Criteria for a Recommended Standard: Occupational Exposure to Heat and Hot Environments",
+    "publisher": "NIOSH",
+    "publication_number": "DHHS (NIOSH) 2016-106",
+    "url": "https://www.cdc.gov/niosh/docs/2016-106/pdfs/2016-106.pdf",
+    "table_5_1_printed_page": 70,
+    "ral_figure": "8-1",
+    "ral_printed_page": 94,
+    "rel_figure": "8-2",
+    "rel_printed_page": 95,
+    "clothing_table": "3-2",
+    "clothing_printed_page": 19,
+    "water_guidance_page": "executive summary, printed page vi"
+  },
+  "transcription_method": "Approximate chart digitization at the class upper-edge metabolic workload shown in Figure 8-1/8-2; thresholds rounded downward to half-degree Celsius increments as a conservative engineering transcription. The figures are curves, not a tabulated schedule. This JSON is not an official NIOSH table and is not approved for field use.",
+  "professional_review": "PENDING",
+  "water_guidance": "NIOSH 2016-106 executive summary p. vi: one 8-oz cup of water or other fluid every 15–20 minutes; general source guidance, not individualized advice.",
+  "workload_classes": {
+    "light": {"label": "Light", "kcal_per_hour": "<200", "chart_workload_kcal_per_hour": 200, "source_page": 70},
+    "moderate": {"label": "Moderate", "kcal_per_hour": "201–300", "chart_workload_kcal_per_hour": 300, "source_page": 70},
+    "heavy": {"label": "Heavy", "kcal_per_hour": "301–400", "chart_workload_kcal_per_hour": 400, "source_page": 70},
+    "very_heavy": {"label": "Very heavy", "kcal_per_hour": "401–500", "chart_workload_kcal_per_hour": 500, "source_page": 70}
+  },
+  "table_5_1_acclimatized_continuous_limit_c": {
+    "resting": {"wbgt_c": 33.0, "kcal_per_hour": "≤100"},
+    "light": {"wbgt_c": 30.0, "kcal_per_hour": "<200"},
+    "moderate": {"wbgt_c": 28.0, "kcal_per_hour": "201–300"},
+    "heavy": {"wbgt_c": 26.0, "kcal_per_hour": "301–400"},
+    "very_heavy": {"wbgt_c": 25.0, "kcal_per_hour": "401–500"}
+  },
+  "water_guidance": "One 8-oz cup every 15–20 minutes (NIOSH 2016-106, executive summary, printed p. vi).",
+  "band_actions": {
+    "normal": {"label": "A · NORMAL", "work_minutes_per_hour": 60, "rest_minutes_per_hour": 0, "guidance": "Normal work with standard breaks; drink regularly and keep heat awareness active."},
+    "caution": {"label": "B · CAUTION", "work_minutes_per_hour": 45, "rest_minutes_per_hour": 15, "guidance": "45 work / 15 rest each hour; provide a shaded rest area and buddy check at breaks."},
+    "high": {"label": "C · HIGH", "work_minutes_per_hour": 30, "rest_minutes_per_hour": 30, "guidance": "30 work / 30 rest each hour; move heavy tasks to cooler hours."},
+    "very_high": {"label": "D · VERY HIGH", "work_minutes_per_hour": 15, "rest_minutes_per_hour": 45, "guidance": "15 work / 45 rest each hour; stop non-essential heavy work."}
+  },
+  "curves_by_acclimatization": {
+    "unacclimatized": {
+      "curve": "RAL",
+      "source_figure": "8-1",
+      "source_page": 94,
+      "class_rows": {
+        "light": {"workload_kcal_per_hour": 200, "wbgt_c_at_work_minutes_per_hour": {"60": 27.5, "45": 28.5, "30": 29.5, "15": 30.5}},
+        "moderate": {"workload_kcal_per_hour": 300, "wbgt_c_at_work_minutes_per_hour": {"60": 25.0, "45": 26.0, "30": 27.5, "15": 29.0}},
+        "heavy": {"workload_kcal_per_hour": 400, "wbgt_c_at_work_minutes_per_hour": {"60": 24.0, "45": 24.5, "30": 26.0, "15": 27.5}},
+        "very_heavy": {"workload_kcal_per_hour": 500, "wbgt_c_at_work_minutes_per_hour": {"60": 22.0, "45": 23.0, "30": 25.0, "15": 26.5}}
+      }
+    },
+    "acclimatized": {
+      "curve": "REL",
+      "source_figure": "8-2",
+      "source_page": 95,
+      "class_rows": {
+        "light": {"workload_kcal_per_hour": 200, "wbgt_c_at_work_minutes_per_hour": {"60": 29.5, "45": 30.5, "30": 31.5, "15": 32.5}},
+        "moderate": {"workload_kcal_per_hour": 300, "wbgt_c_at_work_minutes_per_hour": {"60": 27.5, "45": 28.5, "30": 29.5, "15": 30.5}},
+        "heavy": {"workload_kcal_per_hour": 400, "wbgt_c_at_work_minutes_per_hour": {"60": 26.0, "45": 27.5, "30": 28.5, "15": 29.5}},
+        "very_heavy": {"workload_kcal_per_hour": 500, "wbgt_c_at_work_minutes_per_hour": {"60": 25.0, "45": 26.0, "30": 27.5, "15": 29.0}}
+      }
+    }
+  },
+  "clothing_adjustments_c": {
+    "normal": {"degrees_c": 0.0, "source": "NIOSH 2016-106 Table 3-2, p.19; work clothing baseline"},
+    "heavy": {"degrees_c": 4.0, "source": "Conservative v7 profile mapping: partially air/vapor-impermeable ensemble correction; NIOSH pp.16–19. Not an exact mapping of generic 'heavy' PPE."},
+    "impermeable": {"degrees_c": 11.0, "source": "NIOSH 2016-106 Table 3-2, p.19; limited-use vapor-barrier coverall. WBGT is not appropriate for fully impermeable encapsulating ensembles."}
+  },
+  "hysteresis": {"buffer_c": 1.0, "below_threshold_consecutive_evaluations_to_ease": 2, "status": "configurable engineering demo value; not a NIOSH medical limit"},
+  "symptom_tightening": {"reports_to_tighten": 3, "bands_to_tighten": 1, "status": "demo-only configurable value; requires field safety review"}
+}
