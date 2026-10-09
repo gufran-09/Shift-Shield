@@ -12,6 +12,7 @@ const ReplayPage = lazy(() => import('./pages/ReplayPage').then((module) => ({ d
 const RestPage = lazy(() => import('./pages/RestPage').then((module) => ({ default: module.RestPage })));
 const RulebooksPage = lazy(() => import('./pages/RulebooksPage').then((module) => ({ default: module.RulebooksPage })));
 const SetupPage = lazy(() => import('./pages/SetupPage').then((module) => ({ default: module.SetupPage })));
+const VerifyPage = lazy(() => import('./pages/VerifyPage').then((module) => ({ default: module.VerifyPage })));
 
 function PageLoading() {
   return <div className="page-wrap"><div className="loading-state">Loading ShiftShield page…</div></div>;
@@ -23,6 +24,7 @@ export function App() {
       <Routes>
         <Route path="/rest/:siteCode" element={<RestPage />} />
         <Route path="/ack/:token" element={<AckPage />} />
+        <Route path="/verify/:certificateId" element={<VerifyPage />} />
         <Route element={<Shell />}>
           <Route index element={<HeatCheckPage />} />
           <Route path="setup" element={<SetupPage />} />
