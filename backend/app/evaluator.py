@@ -5,7 +5,7 @@ from typing import Any
 
 from aws_lambda_powertools import Logger
 
-from .alerts import maybe_send_ack_reminder
+from .alerts import maybe_escalate_unacknowledged_alert, maybe_send_ack_reminder
 from .config import DEMO_MODE
 from .main import _calculate_profile
 from .store import store
@@ -26,6 +26,10 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                 maybe_send_ack_reminder(site)
             except Exception as reminder_error:
                 logger.exception("ack_reminder_failed", site_id=str(site["site_id"]), error_type=type(reminder_error).__name__)
+            try:
+                maybe_escalate_unacknowledged_alert(site)
+            except Exception as esc_error:
+                logger.exception("alert_escalation_failed", site_id=str(site["site_id"]), error_type=type(esc_error).__name__)
             results.append({"site_id": str(site["site_id"]), "status": "evaluated", "current_band": str((plan.get("current") or {}).get("band", "unknown"))})
         except Exception as exc:
             # Do not log contact addresses, tokens, uploaded PDF text or request bodies.
