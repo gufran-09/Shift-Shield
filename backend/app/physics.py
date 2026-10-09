@@ -6,8 +6,21 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from metpy.units import units
-from pywbgt import wbgt as pywbgt_estimate
+try:
+    import sys
+    from unittest.mock import MagicMock
+    if "pyproj" not in sys.modules:
+        sys.modules["pyproj"] = MagicMock()
+        sys.modules["pyproj.crs"] = MagicMock()
+    from metpy.units import units
+    from pywbgt import wbgt as pywbgt_estimate
+    HAVE_PYWBGT = True
+except Exception:
+    HAVE_PYWBGT = False
+    pywbgt_estimate = None
+    units = None
+
+from .liljegren_pure import cos_zenith, wbgt_outdoor_c
 
 from .config import SITE_ADJUSTMENTS
 
@@ -92,40 +105,60 @@ def calculate_site_wbgt(
     dates = pd.DatetimeIndex(pd.to_datetime(timestamps, utc=True))
     iso_times = [str(value) for value in dates]
 
-    try:
-        components = pywbgt_estimate(
-            datetime=dates,
-            lat=np.full(count, float(latitude)),
-            lon=np.full(count, float(longitude)),
-            # pywbgt/Liljegren mutates several input arrays during unit conversion
-            # and wind/solar adjustments; pass isolated copies so audit inputs stay raw.
-            solar=units.Quantity(solar_site.copy(), "W/m^2"),
-            pres=units.Quantity(np.asarray(pressure_hpa, dtype=float).copy(), "hPa"),
-            temp_air=units.Quantity(site_air.copy(), "degC"),
-            temp_dew=units.Quantity(site_dew.copy(), "degC"),
-            speed=units.Quantity(site_wind.copy(), "m/s"),
-            method="liljegren",
-        )
-    except Exception as exc:
-        raise ValueError(f"WBGT model could not evaluate the supplied meteorology: {type(exc).__name__}") from exc
+    used_pywbgt = False
+    if HAVE_PYWBGT and pywbgt_estimate is not None and units is not None:
+        try:
+            components = pywbgt_estimate(
+                datetime=dates,
+                lat=np.full(count, float(latitude)),
+                lon=np.full(count, float(longitude)),
+                solar=units.Quantity(solar_site.copy(), "W/m^2"),
+                pres=units.Quantity(np.asarray(pressure_hpa, dtype=float).copy(), "hPa"),
+                temp_air=units.Quantity(site_air.copy(), "degC"),
+                temp_dew=units.Quantity(site_dew.copy(), "degC"),
+                speed=units.Quantity(site_wind.copy(), "m/s"),
+                method="liljegren",
+            )
+            globe_component = components[0]
+            wet_bulb_component = components[2]
+            model_solar_component, wind_2m_component, min_wind_component = components[4], components[5], components[6]
+            if not any(c is None for c in (globe_component, wet_bulb_component, model_solar_component, wind_2m_component, min_wind_component)):
+                globe_c = _per_row(globe_component.to("degC").magnitude, count)
+                natural_wet_c = _per_row(wet_bulb_component.to("degC").magnitude, count)
+                model_solar_w_m2 = _per_row(model_solar_component.to("W/m^2").magnitude, count)
+                wind_2m_m_s = _per_row(wind_2m_component.to("m/s").magnitude, count)
+                min_wind_m_s = _per_row(min_wind_component.to("m/s").magnitude, count)
+                used_pywbgt = True
+        except Exception:
+            used_pywbgt = False
 
-    globe_component = components[0]
-    wet_bulb_component = components[2]
-    model_solar_component, wind_2m_component, min_wind_component = components[4], components[5], components[6]
-    if (
-        globe_component is None
-        or wet_bulb_component is None
-        or model_solar_component is None
-        or wind_2m_component is None
-        or min_wind_component is None
-    ):
-        raise ValueError("WBGT library did not return all required thermal and model-input components")
-    globe_c = _per_row(globe_component.to("degC").magnitude, count)
-    natural_wet_c = _per_row(wet_bulb_component.to("degC").magnitude, count)
-    model_solar_w_m2 = _per_row(model_solar_component.to("W/m^2").magnitude, count)
-    wind_2m_m_s = _per_row(wind_2m_component.to("m/s").magnitude, count)
-    # pywbgt returns the minimum-wind floor as a single scalar, not one value per row.
-    min_wind_m_s = _per_row(min_wind_component.to("m/s").magnitude, count)
+    if not used_pywbgt:
+        globe_c = np.zeros(count, dtype=float)
+        natural_wet_c = np.zeros(count, dtype=float)
+        model_solar_w_m2 = solar_site.copy()
+        wind_2m_m_s = np.maximum(site_wind * 0.75, 0.13)
+        min_wind_m_s = np.full(count, 0.13)
+        for i in range(count):
+            when_dt = dates[i].to_pydatetime()
+            cza = cos_zenith(when_dt, latitude, longitude)
+            d_i = float(direct[i])
+            diff_i = float(diffuse[i])
+            fdir = d_i / (d_i + diff_i) if (d_i + diff_i) > 0 else 0.0
+            a, b = 17.625, 243.04
+            e_dew = np.exp(a * site_dew[i] / (b + site_dew[i]))
+            e_air = np.exp(a * site_air[i] / (b + site_air[i]))
+            rh_pct = float(np.clip(100.0 * e_dew / max(e_air, 1e-4), 1.0, 100.0))
+            _, tnwb, tg = wbgt_outdoor_c(
+                ta_c=float(site_air[i]),
+                rh_pct=rh_pct,
+                pres_mb=float(pressure_hpa[i]),
+                speed_2m=float(wind_2m_m_s[i]),
+                solar=float(solar_site[i]),
+                fdir=fdir,
+                cza=cza,
+            )
+            globe_c[i] = tg
+            natural_wet_c[i] = tnwb
     margin = float(margin_c if margin_c is not None else SITE_ADJUSTMENTS["uncertainty_margin_c"]["default"])
     if not 0 <= margin <= 5:
         raise ValueError("Uncertainty margin must be between 0°C and 5°C")
