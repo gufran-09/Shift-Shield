@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, BellRing, CheckCircle2, Clock3, Copy, ExternalLink, RefreshCw, ShieldAlert, ShieldCheck, Sun, Wind } from 'lucide-react';
+import { Activity, ArrowRight, BellRing, CheckCircle2, Clock3, Copy, ExternalLink, RefreshCw, ShieldAlert, ShieldCheck, Sun, Volume2, Wind } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -32,6 +32,7 @@ export function DashboardPage() {
   const [minsSavedPerRiskHour, setMinsSavedPerRiskHour] = useState(20);
   const [certificate, setCertificate] = useState<{ certificate_id: string; signature: string; verification_url: string; date: string } | null>(null);
   const [certLoading, setCertLoading] = useState(false);
+  const [voicePlaying, setVoicePlaying] = useState<'hi' | 'en' | null>(null);
 
   const load = useCallback(async (refresh = false) => {
     if (!siteId) return;
@@ -87,6 +88,21 @@ export function DashboardPage() {
     } finally {
       setCertLoading(false);
     }
+  }
+
+  function playVoiceAlert(lang: 'hi' | 'en') {
+    if (!site) return;
+    setVoicePlaying(lang);
+    const audio = new Audio(api.getVoiceAlertUrl(site.site_id, lang));
+    audio.onended = () => setVoicePlaying(null);
+    audio.onerror = () => {
+      setVoicePlaying(null);
+      setError('Voice audio synthesis unavailable.');
+    };
+    audio.play().catch(() => {
+      setVoicePlaying(null);
+      setError('Audio playback was prevented by the browser.');
+    });
   }
 
   const riskHours = ledger?.heat_risk_hours ?? 4.0;
@@ -172,7 +188,7 @@ export function DashboardPage() {
           <div><span className="eyebrow">BONUS FEATURE · TAMPER-EVIDENT RECORD</span><h2>Heat-Day Certificate</h2></div>
           <ShieldCheck size={18} color="#e86340" />
         </div>
-        <p className="panel-intro">Signs today's rest record (supervisor acknowledgements and anonymous worker counts) with an HMAC signature, so later edits can be detected. It records what was reported; it does not prove a break happened.</p>
+        <p className="panel-intro">Signs today's rest record (supervisor acknowledgements and anonymous worker counts) with an HMAC/KMS signature, so later edits can be detected. It records what was reported; it does not prove a break happened.</p>
         {certificate ? (
           <div style={{ background: '#f5f3ee', padding: 12, borderRadius: 10, margin: '12px 0', fontSize: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -180,15 +196,48 @@ export function DashboardPage() {
               <span style={{ color: '#2d6a4f', fontWeight: 600 }}>✓ SIGNED</span>
             </div>
             <div style={{ color: '#666', marginBottom: 4 }}>Date: {certificate.date}</div>
-            <div style={{ fontFamily: 'monospace', fontSize: 10, wordBreak: 'break-all', color: '#888' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: 10, wordBreak: 'break-all', color: '#888', marginBottom: 10 }}>
               SIG: {certificate.signature.slice(0, 32)}...
             </div>
+            <Link
+              className="button button--secondary button--wide"
+              to={`/verify/${certificate.certificate_id}`}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              <ShieldCheck size={14} /> VERIFY PUBLIC AUDIT RECORD
+            </Link>
           </div>
         ) : (
           <button className="button button--primary" onClick={() => void generateCert()} disabled={certLoading} style={{ marginTop: 12 }}>
             {certLoading ? 'SIGNING...' : 'GENERATE SIGNED CERTIFICATE'}
           </button>
         )}
+      </div>
+
+      <div className="panel-card voice-alert-card">
+        <div className="card-heading card-heading--small">
+          <div><span className="eyebrow">BONUS FEATURE · SPOKEN WARNING</span><h2>Polly Voice Alert</h2></div>
+          <Volume2 size={18} color="#e86340" />
+        </div>
+        <p className="panel-intro">Spoken heat-stress audio announcements for noisy construction yards in Indian languages using Amazon Polly.</p>
+        <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+          <button
+            className="button button--secondary"
+            onClick={() => playVoiceAlert('hi')}
+            disabled={voicePlaying !== null}
+            style={{ flex: 1, minWidth: 140, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          >
+            <Volume2 size={15} /> {voicePlaying === 'hi' ? 'PLAYING (HINDI)...' : 'HINDI (काजल / अदिति)'}
+          </button>
+          <button
+            className="button button--secondary"
+            onClick={() => playVoiceAlert('en')}
+            disabled={voicePlaying !== null}
+            style={{ flex: 1, minWidth: 140, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          >
+            <Volume2 size={15} /> {voicePlaying === 'en' ? 'PLAYING (ENGLISH)...' : 'INDIAN ENGLISH'}
+          </button>
+        </div>
       </div>
     </section>
   </div>;
