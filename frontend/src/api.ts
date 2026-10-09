@@ -106,4 +106,6 @@ export const api = {
     return request<{ plan: RulebookRecord; candidates: RulebookRecord[]; warning?: string }>(`/api/rulebooks/${enc(siteId)}`, { method: 'POST', headers: auth(siteId), body: form });
   },
   decideRule: (siteId: string, planId: string, ruleId: string, action: 'approve' | 'reject' | 'edit', requirementText?: string, appliesWhen?: string) => request<{ candidate: RulebookRecord; human_gate: string }>(`/api/rulebooks/${enc(siteId)}/${enc(planId)}/${enc(ruleId)}/decision`, { ...json('POST', { action, requirement_text: requirementText, applies_when: appliesWhen, reviewer_role: 'site_supervisor' }), headers: { ...jsonHeaders, ...auth(siteId) } }),
+  getVoiceAlertUrl: (siteId: string, lang: 'hi' | 'en' = 'hi') => `/api/sites/${enc(siteId)}/voice-alert?lang=${lang}&format=audio`,
+  escalateAlert: (siteId: string) => request<{ escalated: boolean; message?: string; event?: Record<string, unknown> }>(`/api/sites/${enc(siteId)}/escalate`, { ...json('POST', {}), headers: { ...jsonHeaders, ...auth(siteId) } }),
 };
