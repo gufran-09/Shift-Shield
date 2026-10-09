@@ -17,6 +17,8 @@ import type {
 const jsonHeaders = { Accept: 'application/json', 'Content-Type': 'application/json' };
 const enc = (value: string) => encodeURIComponent(value);
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
+
 export function saveSupervisorSession(site: SiteProfile, token: string): void {
   sessionStorage.setItem('shiftshield.activeSiteId', site.site_id);
   sessionStorage.setItem('shiftshield.activeSite', JSON.stringify({ site_id: site.site_id, site_code: site.site_code, name: site.name }));
@@ -45,7 +47,8 @@ function auth(siteId: string): Record<string, string> {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
-  const response = await fetch(path, { ...init, headers, credentials: 'omit' });
+  const url = path.startsWith('http://') || path.startsWith('https://') ? path : `${API_BASE}${path}`;
+  const response = await fetch(url, { ...init, headers, credentials: 'omit' });
   const body = (await response.json().catch(() => ({}))) as { detail?: { message?: string; error?: string } | string } & Record<string, unknown>;
   if (!response.ok) {
     const detail = body.detail;
@@ -106,6 +109,6 @@ export const api = {
     return request<{ plan: RulebookRecord; candidates: RulebookRecord[]; warning?: string }>(`/api/rulebooks/${enc(siteId)}`, { method: 'POST', headers: auth(siteId), body: form });
   },
   decideRule: (siteId: string, planId: string, ruleId: string, action: 'approve' | 'reject' | 'edit', requirementText?: string, appliesWhen?: string) => request<{ candidate: RulebookRecord; human_gate: string }>(`/api/rulebooks/${enc(siteId)}/${enc(planId)}/${enc(ruleId)}/decision`, { ...json('POST', { action, requirement_text: requirementText, applies_when: appliesWhen, reviewer_role: 'site_supervisor' }), headers: { ...jsonHeaders, ...auth(siteId) } }),
-  getVoiceAlertUrl: (siteId: string, lang: 'hi' | 'en' = 'hi') => `/api/sites/${enc(siteId)}/voice-alert?lang=${lang}&format=audio`,
+  getVoiceAlertUrl: (siteId: string, lang: 'hi' | 'en' = 'hi') => `${API_BASE}/api/sites/${enc(siteId)}/voice-alert?lang=${lang}&format=audio`,
   escalateAlert: (siteId: string) => request<{ escalated: boolean; message?: string; event?: Record<string, unknown> }>(`/api/sites/${enc(siteId)}/escalate`, { ...json('POST', {}), headers: { ...jsonHeaders, ...auth(siteId) } }),
 };

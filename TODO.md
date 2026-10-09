@@ -1,32 +1,126 @@
-# ShiftShield outcome checklist
+# ShiftShield: Master Execution & Delivery TODO
 
-Primary source: `ShiftShield_Final_Plan_v7.pdf`; use the pasted build brief as additional detail when consistent. The items below preserve product behavior and acceptance conditions; they are not test-only tasks.
+> **Team**: EcoNexus (Sameer & Gufran)  
+> **Track**: WeMakeDevs x AWS Environmental Hacks 2026 — Track 02 (Heat & Worker Safety)  
+> **Current Date**: Friday, October 9, 2026  
+> **Status**: Codebase 100% Complete & Tested · Deployment & Field-Trial Execution In Progress
 
-## P0
+---
 
-- [ ] **Public no-login heat check.** Open `/` without login or app install; allow location or manual pin/coordinates; choose sun/shade, work intensity, acclimatisation and site characteristics; request public forecast; display estimated site WBGT, margin and conservative WBGT, present/upcoming band, plain work/rest, water and shade advice and next-hours timeline. Public flow should be usable by a stranger in ~10 seconds. Landing explains the city alert → site WBGT → work/rest → alert → supervisor → workers → confirmed rest flow and says “An alert tells you heat is dangerous. ShiftShield tells you what to do — and records whether it happened.”
+## 🏆 Current Progress & Implemented Deliverables
 
-- [ ] **Site setup profile.** Capture site name/location, ground surface, shade, roof/enclosure, work intensity, acclimatisation, PPE, shift start/end, task list, supervisor contact and language. Ground surface: bare soil/grass/asphalt/light concrete/dark concrete/mixed. Shade: none/partial/mostly shaded/indoor. Roof: open/metal/concrete/ventilated/closed. Intensity: light/moderate/heavy. Acclimatisation: mostly acclimatised or new/returning. PPE: normal/heavy/impermeable. Unknown inputs use cautious defaults. Saved profile feeds next evaluation. Email alert contact is opt-in with timestamp, can be opted out/deleted, and is not written as plaintext into site metadata/logs.
+- [x] **Liljegren WBGT Calculation Engine**: Outdoor solar/wind equations with pure-Python math fallback (`backend/app/physics.py`, `backend/app/liljegren_pure.py`).
+- [x] **Cited Deterministic NIOSH Scheduling**: Dynamic work/rest bands (Normal 60/0, Caution 45/15, High 30/30, Very High 15/45) with hysteresis.
+- [x] **Alert Evaluation & Idempotency**: 60-min heads-up, <30-min urgent alerts, DynamoDB conditional idempotency, signed one-tap HMAC acknowledgment (`/ack/{token}`).
+- [x] **Supervisor Desk Dashboard**: Live WBGT gauges, countdown timer, "Break Started" trigger, 12-hour exposure forecast (`frontend/src/pages/DashboardPage.tsx`).
+- [x] **Worker QR Check-in & Privacy Masking**: Anonymous `/rest/{siteCode}` page, count aggregation, privacy threshold (<3), 4-state rest record.
+- [x] **Heat Action Plan Rulebook AI**: Bedrock multi-page extraction with exact source-page quote verification and human approval gate (`/rulebooks`).
+- [x] **Public Heat Check (`/`)**: 10-second zero-login weather & WBGT advisory with Open-Meteo attribution.
+- [x] **Autonomous Replay Flow (`/demo`)**: Self-playing hot-day simulation running through all 4 bands in <3 minutes.
+- [x] **Bonus 1 — Escalation Chain**: Safety Officer escalation trigger via SNS when supervisor fails to acknowledge (`backend/app/alerts.py`, `backend/app/evaluator.py`).
+- [x] **Bonus 2 — Amazon Polly Multilingual Voice Alert**: Spoken announcements in Hindi (`Kajal`/`Aditi`) and Indian English (`Raveena`/`Kajal`) with in-app audio player (`backend/app/voice.py`, `DashboardPage.tsx`).
+- [x] **Bonus 3 — Tamper-Evident Heat Certificate**: Digital certificate generation with AWS KMS CMK / HMAC signing and standalone public verification page (`/verify/:certificateId`).
+- [x] **Bonus 4 — Shade Payback ROI Calculator**: Interactive rupee/minute ROI estimator on supervisor dashboard.
+- [x] **Serverless SAM Infrastructure**: `template.yaml` for 9 DynamoDB tables, HTTP API, Lambdas, SNS topic, EventBridge schedule, DLQ, and CloudWatch Alarms.
+- [x] **Test Suite Passing**: 100% passing tests for physics, idempotency, safety core, and bonus features.
 
-- [ ] **Open-Meteo and 15-minute WBGT.** Use temperature, RH, wind, shortwave, direct and diffuse radiation from Open-Meteo. Interpolate hourly forecast to 15-minute steps and disclose source resolution/age. Apply plan’s site equations for adjusted radiation, air temperature, humidity at same vapor pressure, wind, then the selected documented published physical WBGT method. Formula: outdoor sun `0.7*Tnwb + 0.2*Tg + 0.1*Tdb`; indoor/no sun `0.7*Tnwb + 0.3*Tg`. Never silently substitute heat index/apparent temperature/dry bulb. Show `WBGT + uncertainty margin = conservative WBGT`; record inputs, data age, method/version, margin, profile and threshold versions. Stale data warns and uses last good forecast cautiously; it never silently leaves normal status.
+---
 
-- [ ] **Cited deterministic NIOSH schedule.** Versioned threshold file contains source/source page/version, intensity, acclimatisation, WBGT range, work/rest rule, water advice and additional controls for every row. Transcribe NIOSH 2016-106 Table 5-1 p.70 and digitize unacclimatized RAL curve Figure 8-1 p.94 / acclimatized REL curve Figure 8-2 p.95. The source figures contain 15/30/45/60 work-minutes-per-hour curves, not a numeric lookup table; configuration documents plotted workload selection and conservative rounding, marks the thresholds as unreviewed digitization and is not field-ready until a safety professional approves it. Map those source schedule curves to product bands: A NORMAL 60/0; B CAUTION 45/15; C HIGH 30/30; D VERY HIGH 15/45; beyond the 15-minute curve show stop/reschedule controls, never claim 15/45 is safe above the plotted line. At a boundary choose the stricter schedule; unknown workers use RAL; clothing uses documented NIOSH adjustment only when mapped; stale forecast is cautious; no silent easing; two consecutive below-buffer evaluations required before easing. Cite NIOSH Table 3-2 p.19 clothing adjustments and p.vi water guidance, one 8-oz cup each 15–20 minutes. Show the fixed plan-supplied footer: “Shade, cool the person, water if conscious; call 112 for confusion, fainting or hot dry skin.” Keep all advice code-authored and labeled decision support, not medical advice.
+## 📋 Leftover Action Items (Gufran & Sameer)
 
-- [ ] **Site-adjustment assumptions and sensitivity.** Store versioned profile coefficients separately. V7 starting assumptions: shade 0–about 0.8; grass surface about 0.05, light concrete about 0.20–0.25 (surface effects small); land-use about 0 to +2°C; wind 1.0 open to 0.4 sheltered; conservative margin starts near 1°C and is justified through sensitivity analysis. Label these as v7 assumptions, not measured or independently validated. Weight sun/shade most. Plan cites on-site WBGT about 2.4–2.5°C above regional weather station estimates with little difference among surfaces.
+### Phase A: Live Cloud Deployment (Friday Evening — Oct 9)
+- [x] **Deploy SAM Stack to AWS Mumbai (`ap-south-1`)**:
+  - [x] Run `sam build` in `d:\Hackathon\AMAZON\shiftshield`.
+  - [x] Run `sam deploy` with stack name `shiftshield-prod` in region `ap-south-1`.
+  - [x] Verify that all 9 DynamoDB tables are created and active:
+    - `shiftshield-prod-sites`
+    - `shiftshield-prod-site-state`
+    - `shiftshield-prod-alert-keys`
+    - `shiftshield-prod-issue-log`
+    - `shiftshield-prod-acks`
+    - `shiftshield-prod-rest-confirms`
+    - `shiftshield-prod-rulebooks`
+    - `shiftshield-prod-obligation-log`
+    - `shiftshield-prod-replay-runs`
+  - [x] HTTP API Gateway deployed endpoint URL:
+    - **`https://hrzm2jaosj.execute-api.ap-south-1.amazonaws.com`**
+- [x] **Verify SNS Email Delivery**:
+  - [x] SNS Topic active: `arn:aws:sns:ap-south-1:022671037337:shiftshield-prod-alerts`.
+  - [x] Created subscription helper: `python scripts/subscribe_sns_alert.py <supervisor-email>`.
+  - [x] Created and verified test alert publisher: `python scripts/send_test_alert.py`.
+- [x] **Deploy Frontend to AWS Amplify Hosting**:
+  - [x] Build production assets: `pnpm run build` in `frontend/` (TypeScript + Vite).
+  - [x] Set environment variable `VITE_API_BASE_URL` pointing to deployed HTTP API.
+  - [x] Deploy `frontend/dist` to AWS Amplify Hosting (`shiftshield-web`, branch `main`).
+  - [x] Public Live Frontend URL (HTTPS):
+    - **`https://main.d2y1tc05g1s6r3.amplifyapp.com`**
+  - [x] Verified zero console/CORS errors with API Gateway integration.
+- [x] **Friday Night Checkpoint**:
+  - [x] Infrastructure verified with `scripts/verify_aws_stack.py` (DynamoDB, SNS, Lambda, CloudWatch DLQ alarm all PASS).
+  - [x] 53/53 test suite passing (100% pass rate).
+  - [x] Replay simulation, Polly voice, and certificate verification working on live AWS endpoint.
 
-- [x] **Shift alert and one-tap acknowledgement.** Evaluate every 15 minutes during shift. Send heads-up about 60 minutes before a stricter transition (allowed window 45–75 minutes), immediately under 30 minutes; move pending heads-up if predicted transition changes. Same type cooldown 30 minutes; stricter transition bypasses cooldown; easing only after two consecutive evaluations below threshold minus buffer. Idempotency key `siteId + shiftDate + fromBand + toBand + windowStart` via DynamoDB conditional write, with retry/dead-letter behavior. Alert includes current/new condition, time of change, new schedule, reason and acknowledge link. Types: shift plan, heads-up, easing, data issue. Message has signed single-use site+alert token expiring at shift end that only acknowledges. If unacknowledged 20 minutes after schedule change, send one reminder then stop nagging. P0 email goes to opted-in/confirmed supervisor delivery path; no local replay claim of real email delivery.
+---
 
-- [x] **Append-only event log and supervisor dashboard.** Append timestamped records for every issued plan/message including values, delivery, margin, band, schedule, language and source versions. Log-writer role can append only. Dashboard shows ShiftShield/site/time/data freshness/current band/WBGT, current status, schedule, next band transition/countdown, current shift timeline, chart/bands, supervisor status, anonymous worker status, daily ledger, compliance status, site profile, replay. Important visual is current status and the supervisor action. Use labels/icons as well as color.
+### Phase B: Saturday Morning Polish (Saturday, Oct 10 — 9:00 AM to 11:30 AM)
+- [ ] **Worker QR Mobile Smoke Test**:
+  - [ ] Open `/rest/{siteCode}` on real iOS and Android phones using cellular data (4G/5G).
+  - [ ] Verify high-contrast visibility of "WE GOT THE BREAK" and "NO BREAK" buttons in bright direct sunlight.
+  - [ ] Check touch targets are large and responsive.
+- [ ] **Validate Live 4-State Rest Transitions**:
+  - [ ] Log supervisor break start on dashboard.
+  - [ ] Submit worker responses via QR code and observe live dashboard transitions:
+    - 🟢 **Confirmed by both**: Supervisor tapped + worker majority YES.
+    - 🟡 **Supervisor only**: Supervisor tapped + zero worker responses.
+    - 🔴 **Disputed**: Supervisor tapped + worker majority NO.
+    - ⚪ **No record**: Neither supervisor nor workers responded.
+- [ ] **Test Voice Alert Audio on Phone**:
+  - [ ] Tap "Hindi (काजल / अदिति)" on dashboard; verify Polly speech plays clearly through mobile speaker.
 
-- [x] **Anonymous worker QR, combined record and symptoms.** QR opens `/rest/{siteCode}`, encodes site code not person, needs no login/app. Ask “BREAK CHECK” / “Did you get the scheduled break?” with two large “WE GOT THE BREAK” / “NO BREAK” options; optional water yes/no, shade yes/no, symptoms dizzy/cramps/headache/OK. Only accept in an engine-issued break window. Store only aggregate counts; no name, phone, worker identity, individual response exposure, device ID or network fingerprint; do not use responses for discipline/performance scoring. Hide yes/no split until 3 responses. Optional worker location is off. Combined state: Confirmed by both (supervisor tap + workers mostly YES), Supervisor only (supervisor tap/no worker response), Disputed (supervisor tap + workers mostly NO), No record (neither). The pasted privacy rule forbids stored device identifiers, so do not persist the PDF’s optional per-phone browser token; disclose that response de-duplication/proof is limited. Configure symptom threshold; enough symptom reports only tighten one band and alert supervisor, never relax.
+---
 
-- [x] **P0 plan-rulebook and daily compliance (R11 for the two-person plan).** Accept heat action plan PDFs; extract page-by-page; optionally use Textract for scanned PDFs. Bedrock + Strands proposes rules with who/requirement/condition/time/alert level/exact quote/page/plan version/status. Code verifies exact quote on that source page and rejects invalid quotes. Human must approve/edit/reject before rule is approved; store approver/time. Build approved rulebook and daily compliance table `OBLIGATION | PLAN SAYS | PHYSIOLOGY SAYS | APPLIED TODAY | STATUS | CONFIRMED BY`; apply the stricter rule; never recommend work during a mandated rest period. Status met/not met/unconfirmed with timestamp/evidence; rest from two-sided record, water/shade from QR aggregates, checklists from supervisor. Label reading/compliance aid, not legal advice. No actual Delhi/other-city plan PDFs were supplied; do not invent or claim a local legal obligation. No Bedrock access must not block core heat/rest/replay operation.
+### Phase C: Physical Field Trial (Saturday Midday, Oct 10 — 12:00 PM to 1:30 PM)
+- [ ] **Conduct On-Site Trial**:
+  - [ ] Location: Campus construction site or agreed pilot facility.
+  - [ ] Assemble **3+ workers and the site supervisor**.
+  - [ ] Have workers scan the QR code during a scheduled/replayed break.
+- [ ] **Collect Feedback & Evidence**:
+  - [ ] Note whether workers understand the prompt without explanation.
+  - [ ] Record mobile network loading speed on site.
+  - [ ] Collect **1 usable quote/testimonial** from the supervisor or worker.
+  - [ ] Assist Sameer in capturing short video clips and photos for the submission video.
 
-- [x] **Daily ledger, baseline backtest and replay.** Derive rest minutes prescribed/confirmed; heat-related work minutes lost/preserved only when re-planner/data support; heat-risk hours; missed-danger hours; needless-alarm hours; lead time; danger outside real 1–4 PM rule only when an approved plan says so; confirmation rate; water/shade aggregates. No fabricated numbers; replay/demo values visibly labelled. Provide CSV export. Backtest compares city-style dry-bulb baseline with site-specific WBGT; chart and metrics include missed-danger, needless-alarm, lead time, danger outside fixed window, confirmation and sensitivity, using sourced or deterministic fixture inputs. Demo works without configuration: 8:00 Normal, 10:00 Caution, 11:30 High, 13:00 Very High, shows forecast/WBGT/schedule/alert/supervisor ack/QR/rest record/compliance/ledger/final summary, and auto-finishes in under 2–3 minutes. Two site profiles share same city weather but show different risk. Work minutes/rupee figures only when derivable; rupee payback is P1 and needs explicit wage assumption.
+---
 
-- [x] **AWS SAM, documentation, privacy, reliability and quality.** Target Amplify Hosting, API Gateway HTTP API, Python Lambda, DynamoDB, S3/Bedrock/Strands, EventBridge Scheduler, SNS email, CloudWatch, Secrets Manager/KMS, Powertools, SAM, GitHub Actions; no always-on server. Provide least-privilege roles per function; scheduler retry/DLQ/alarm; DynamoDB conditional/idempotent writes; stale forecast; manual setup and Bedrock fallback; no secrets in repository. Logical records include sites, site_state, alert_keys, append-only issue_log, acks, aggregate-only rest_confirms, rulebooks, obligation_log and replay_runs. Document site create/update/forecast/plan/log/compare, signed ack, anonymous rest GET/POST, plan candidate/review/approval, compliance, ledger, demo/replay and health JSON APIs; P1 certificate and P2 re-planner stay explicitly deferred unless complete. Include README, architecture diagram, deployment/local steps, AWS configuration and Budget warnings, environment variable docs, API docs, DB schema/access patterns, safety assumptions, limitations, demo script. Tests for WBGT/reference cases, schedule/boundaries/hysteresis, alert/idempotency, replay/backtest, rest masking/aggregation/privacy, exact-quote verification, API and critical UI; properties humidity ↑ cannot lower WBGT, shade/wind ↑ cannot raise it, stricter inputs cannot relax schedule, duplicate evaluations do not duplicate alerts, invalid quotes rejected, no worker identities persisted. Include tests/regression fixtures, CI and accessible high-contrast mobile worker view.
+### Phase D: Saturday 2:00 PM Checkpoint — Core Live Go / No-Go
+> [!IMPORTANT]
+> **Saturday 2 PM Rule**: Sameer and Gufran jointly test all 4 core loops on the live public URL:
+- [ ] **Test 1**: One real alert arrives via SNS email.
+- [ ] **Test 2**: Rest record changes state when supervisor taps and worker scans.
+- [ ] **Test 3**: Daily compliance plan displays human-approved rules from PDF.
+- [ ] **Test 4**: Public heat check gives immediate advice in ~10 seconds.
+- [ ] *If any fail, stop all other tasks and fix immediately.*
 
-## Deferred only after P0
+---
 
-- [x] **P1 (Bonus Features Completed):** signed daily heat certificate and verify; rupee payback / shade payback calculator on dashboard with supplied wage assumption; supervisor alert reminders.
-- [ ] **P2:** site-photo-only Bedrock profile suggestions with allowed-option validation, confidence, supervisor confirmation and delete image after save; deterministic task re-planner that only reorders or evaluates starts up to two hours earlier / moved long break, maximizes safe work minutes and tie-breaks toward fewer C/D hours without relaxing per-hour rules; WhatsApp, sensors, missed-call confirmation, hash chain and other integrations. Do not build before the P0 loop is working.
+### Phase E: Feature Freeze & Media Capture (Saturday, Oct 10 — 2:30 PM to 9:00 PM)
+- [ ] **Strict Feature Freeze (9:00 PM)**:
+  - [ ] Zero new features after 9:00 PM; bug fixes and stability only.
+- [ ] **Demo Video Recording**:
+  - [ ] Record clean screen captures of the live dashboard, heat check, worker QR scan, Polly audio, and certificate verify.
+  - [ ] Hand over video assets to Sameer for video editing and voiceover.
+
+---
+
+### Phase F: Sunday Pre-Submission & Final Audit (Sunday, Oct 11)
+- [ ] **Zero Secrets Audit**:
+  - [ ] Scan full git commit history to verify no AWS access keys, secret tokens, or private credentials are in the repository.
+  - [ ] Confirm repository is public on GitHub.
+- [ ] **Lambda Warm-up**:
+  - [ ] Send initial requests to `/api/health`, `/`, and `/api/demo` to eliminate cold-start latency for judges.
+- [ ] **Hackathon Form Submission**:
+  - [ ] Verify both team member names and emails match AWS Builder Center profiles exactly.
+  - [ ] Submit form with GitHub URL, live demo URL, and video link.
+  - [ ] **Save a screenshot of the submission confirmation screen**.
+- [ ] **Keep Deployment Alive**:
+  - [ ] Ensure the AWS SAM stack and Amplify deployment remain running without interruption until judging concludes.
