@@ -291,3 +291,74 @@ def maybe_send_ack_reminder(site: dict[str, Any], *, store_obj: Store = store, n
         # Release the claim on transient failure so the scheduled retry can try again.
         store_obj.delete("alert_keys", {"idempotency_key": idempotency})
         raise
+
+
+def maybe_escalate_unacknowledged_alert(site: dict[str, Any], *, store_obj: Store = store, now: datetime | None = None) -> dict[str, Any] | None:
+    """Escalate to Safety Officer if alert remains unacknowledged 15 minutes after reminder (or 35 min total)."""
+    now = now or datetime.now(timezone.utc)
+    pending = store_obj.get("site_state", {"site_id": str(site["site_id"]), "state_key": "pending_alert"})
+    if not pending or pending.get("status", "pending") != "pending" or pending.get("escalated") or not pending.get("alert_id"):
+        return None
+    alert_id = str(pending["alert_id"])
+    issued = store_obj.get("issue_log", {"site_id": str(site["site_id"]), "issue_id": alert_id})
+    if not issued:
+        return None
+    if store_obj.get("acks", {"alert_id": alert_id}):
+        return None
+    try:
+        if pending.get("reminder_sent_at"):
+            sent_time = datetime.fromisoformat(str(pending["reminder_sent_at"]).replace("Z", "+00:00"))
+            wait_seconds = 15 * 60
+        else:
+            sent_time = datetime.fromisoformat(str(issued["created_at"]).replace("Z", "+00:00"))
+            wait_seconds = 35 * 60
+    except (KeyError, ValueError):
+        return None
+    if (now - sent_time).total_seconds() < wait_seconds:
+        return None
+    idempotency = f"ack-escalation:{alert_id}"
+    if not store_obj.put("alert_keys", {"idempotency_key": idempotency, "ttl": int(now.timestamp()) + 48 * 3600, "site_id": site["site_id"], "purpose": "safety_officer_escalation"}, append_only=True):
+        return None
+    delivery = "demo_in_app_only" if DEMO_MODE else "not_sent_no_confirmed_destination"
+    try:
+        topic_arn = os.getenv("SAFETY_OFFICER_SNS_TOPIC_ARN") or site.get("sns_topic_arn")
+        if not DEMO_MODE and topic_arn and PUBLIC_ORIGIN:
+            token = str(issued.get("ack_token", ""))
+            message = (
+                f"[ESCALATION: UNACKNOWLEDGED HEAT ALERT]\n\n"
+                f"Site: {site.get('name', 'Site')}\n"
+                f"Condition: {str(issued.get('to_band', 'stricter')).replace('_', ' ').upper()} heat band scheduled.\n"
+                f"Change time: {pending.get('window_start', issued.get('window_start', 'see dashboard'))}.\n"
+                f"Status: The site supervisor has NOT acknowledged this alert within the designated safety window.\n\n"
+                f"Emergency Acknowledge / Inspection Link: {PUBLIC_ORIGIN.rstrip('/')}/ack/{token}\n\n"
+                "Decision support, not medical advice. Safety Officer or Project Manager intervention recommended."
+            )
+            boto3.client("sns", region_name=AWS_REGION).publish(
+                TopicArn=topic_arn,
+                Subject=f"ShiftShield ESCALATION: Unacknowledged alert at {site.get('name', 'Site')}"[:100],
+                Message=message,
+            )
+            delivery = "sns_escalation_published"
+        event = {
+            "site_id": str(site["site_id"]),
+            "issue_id": f"escalation-{alert_id}",
+            "alert_id": alert_id,
+            "event_type": "safety_officer_escalation",
+            "created_at": now.isoformat(),
+            "delivery_status": delivery,
+            "escalated_to": "safety_officer",
+        }
+        store_obj.put("issue_log", event, append_only=True)
+        store_obj.put("site_state", {
+            **pending,
+            "site_id": str(site["site_id"]),
+            "state_key": "pending_alert",
+            "escalated": True,
+            "escalated_at": now.isoformat(),
+            "escalation_delivery_status": delivery,
+        })
+        return event
+    except Exception:
+        store_obj.delete("alert_keys", {"idempotency_key": idempotency})
+        raise
+
