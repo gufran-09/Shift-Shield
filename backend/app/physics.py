@@ -107,6 +107,7 @@ def calculate_site_wbgt(
 
     used_pywbgt = False
     if HAVE_PYWBGT and pywbgt_estimate is not None and units is not None:
+        components = None
         try:
             components = pywbgt_estimate(
                 datetime=dates,
@@ -119,6 +120,10 @@ def calculate_site_wbgt(
                 speed=units.Quantity(site_wind.copy(), "m/s"),
                 method="liljegren",
             )
+        except Exception:
+            components = None
+
+        if components is not None:
             globe_component = components[0]
             wet_bulb_component = components[2]
             model_solar_component, wind_2m_component, min_wind_component = components[4], components[5], components[6]
@@ -129,8 +134,6 @@ def calculate_site_wbgt(
                 wind_2m_m_s = _per_row(wind_2m_component.to("m/s").magnitude, count)
                 min_wind_m_s = _per_row(min_wind_component.to("m/s").magnitude, count)
                 used_pywbgt = True
-        except Exception:
-            used_pywbgt = False
 
     if not used_pywbgt:
         globe_c = np.zeros(count, dtype=float)
