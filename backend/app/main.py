@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
+import json
 import os
 import secrets
 import uuid
@@ -9,12 +11,23 @@ from datetime import datetime, time as wall_time, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+import boto3
+
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from .backtest import run_historical_comparison
-from .alerts import acknowledge, create_email_subscription, issue_alert, refresh_email_subscription, remove_email_subscription, verify_ack_token
+from .alerts import (
+    acknowledge,
+    create_email_subscription,
+    issue_alert,
+    maybe_escalate_unacknowledged_alert,
+    refresh_email_subscription,
+    remove_email_subscription,
+    verify_ack_token,
+)
+from .voice import build_alert_speech_text, synthesize_speech
 from .compliance import approved_rules, apply_stricter_constraints, daily_compliance
 from .config import DEMO_MODE, PUBLIC_ORIGIN, SITE_ADJUSTMENTS, THRESHOLDS
 from .demo import REPLAY_FIXTURE_VERSION, REPLAY_STEPS, SITE_FIXTURES, demo_worker_context, record_demo_break_started, record_replay_step, replay_compliance, replay_dashboard, replay_state, seed_demo, start_replay, submit_demo_worker
@@ -717,10 +730,26 @@ def site_certificate(site_id: str, authorization: str | None = Header(default=No
         "issuer": "ShiftShield Verified Rest Record",
     }
     canonical = json.dumps(payload, sort_keys=True)
-    signature = hmac.new(b"shiftshield-heat-cert-v1", canonical.encode(), hashlib.sha256).hexdigest()
+    kms_key = os.getenv("KMS_KEY_ARN")
+    signer = "aws_kms" if kms_key else "hmac_sha256"
+    if kms_key:
+        try:
+            kms_client = boto3.client("kms", region_name=AWS_REGION)
+            mac_response = kms_client.generate_mac(
+                KeyId=kms_key,
+                Message=canonical.encode(),
+                MacAlgorithm="HMAC_SHA_256",
+            )
+            signature = mac_response["Mac"].hex()
+        except Exception:
+            signature = hmac.new(b"shiftshield-heat-cert-v1", canonical.encode(), hashlib.sha256).hexdigest()
+            signer = "hmac_sha256_fallback"
+    else:
+        signature = hmac.new(b"shiftshield-heat-cert-v1", canonical.encode(), hashlib.sha256).hexdigest()
     cert_record = {
         **payload,
         "signature": signature,
+        "signer": signer,
         "verification_url": f"/verify/{cert_id}",
     }
     store.put("site_state", {
@@ -737,15 +766,106 @@ def verify_certificate(certificate_id: str) -> dict[str, Any]:
     found = next((item.get("certificate") for item in records if item.get("state_key") == f"certificate:{certificate_id}"), None)
     if not found:
         raise HTTPException(status_code=404, detail={"error": "certificate_not_found", "message": "Certificate not found."})
-    to_verify = {k: v for k, v in found.items() if k not in {"signature", "verification_url"}}
+    to_verify = {k: v for k, v in found.items() if k not in {"signature", "verification_url", "signer"}}
     canonical = json.dumps(to_verify, sort_keys=True)
-    expected_sig = hmac.new(b"shiftshield-heat-cert-v1", canonical.encode(), hashlib.sha256).hexdigest()
-    is_valid = hmac.compare_digest(str(found.get("signature", "")), expected_sig)
+    kms_key = os.getenv("KMS_KEY_ARN")
+    is_valid = False
+    if kms_key and found.get("signer") == "aws_kms":
+        try:
+            kms_client = boto3.client("kms", region_name=AWS_REGION)
+            verify_response = kms_client.verify_mac(
+                KeyId=kms_key,
+                Message=canonical.encode(),
+                Mac=bytes.fromhex(str(found.get("signature", ""))),
+                MacAlgorithm="HMAC_SHA_256",
+            )
+            is_valid = bool(verify_response.get("MacValid", False))
+        except Exception:
+            is_valid = False
+    if not is_valid:
+        expected_sig = hmac.new(b"shiftshield-heat-cert-v1", canonical.encode(), hashlib.sha256).hexdigest()
+        is_valid = hmac.compare_digest(str(found.get("signature", "")), expected_sig)
     return {
         "valid": is_valid,
         "certificate": found,
         "status": "cryptographically_verified" if is_valid else "tampered_or_invalid",
     }
+
+
+@app.get("/api/voice-alert", response_model=None)
+def voice_alert(
+    band: str = "caution",
+    site_name: str = "Construction Site",
+    work_minutes: int | None = None,
+    rest_minutes: int | None = None,
+    lang: str = "hi",
+    format: str = "audio",
+) -> Response | dict[str, Any]:
+    """Synthesize a live audio alert via Amazon Polly in Hindi or Indian English."""
+    text = build_alert_speech_text(
+        site_name=site_name,
+        band=band,
+        work_minutes=work_minutes,
+        rest_minutes=rest_minutes,
+        language=lang,
+    )
+    audio_bytes, media_type = synthesize_speech(text, language=lang)
+    if format == "json":
+        import base64
+        return {
+            "text": text,
+            "language": lang,
+            "media_type": media_type,
+            "audio_base64": base64.b64encode(audio_bytes).decode("ascii"),
+        }
+    return Response(content=audio_bytes, media_type=media_type)
+
+
+@app.get("/api/sites/{site_id}/voice-alert", response_model=None)
+def site_voice_alert(
+    site_id: str,
+    lang: str = "hi",
+    format: str = "audio",
+    authorization: str | None = Header(default=None, alias="Authorization"),
+) -> Response | dict[str, Any]:
+    """Generate audio alert for a registered site based on its current heat band."""
+    site = _authorize(site_id, authorization)
+    saved = store.get("site_state", {"site_id": site_id, "state_key": "latest_plan"})
+    current = (saved or {}).get("plan", {}).get("current") or {}
+    band = str(current.get("band", "normal"))
+    work_mins = current.get("work_minutes_per_hour")
+    rest_mins = current.get("rest_minutes_per_hour")
+    text = build_alert_speech_text(
+        site_name=str(site.get("name", "Site")),
+        band=band,
+        work_minutes=work_mins,
+        rest_minutes=rest_mins,
+        language=lang,
+    )
+    audio_bytes, media_type = synthesize_speech(text, language=lang)
+    if format == "json":
+        import base64
+        return {
+            "site_id": site_id,
+            "text": text,
+            "language": lang,
+            "media_type": media_type,
+            "audio_base64": base64.b64encode(audio_bytes).decode("ascii"),
+        }
+    return Response(content=audio_bytes, media_type=media_type)
+
+
+@app.post("/api/sites/{site_id}/escalate")
+def escalate_site_alert(
+    site_id: str,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+) -> dict[str, Any]:
+    """Escalate an unacknowledged heat alert to the Safety Officer or Project Manager."""
+    site = _authorize(site_id, authorization)
+    result = maybe_escalate_unacknowledged_alert(site, store_obj=store)
+    if not result:
+        return {"escalated": False, "message": "No unacknowledged alert is currently eligible for escalation."}
+    return {"escalated": True, "event": result}
 
 
 @app.post("/api/sites/{site_id}/backtest")
