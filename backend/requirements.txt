@@ -2,7 +2,7 @@ fastapi==0.141.1
 uvicorn[standard]==0.54.0
 mangum==0.22.0
 pywbgt==3.0.7
-numpy==2.5.3
+numpy>=2.0,<2.5
 pandas==3.0.6
 metpy==1.6.3
 pypdf==6.19.0
