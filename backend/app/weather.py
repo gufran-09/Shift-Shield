@@ -27,7 +27,7 @@ def _fetch(latitude: float, longitude: float, timezone_name: str = "auto") -> di
         "latitude": latitude,
         "longitude": longitude,
         "hourly": ",".join(HOURLY),
-        "forecast_days": 2,
+        "forecast_days": 3,
         "timezone": timezone_name,
         "timeformat": "unixtime",
         "wind_speed_unit": "ms",
@@ -43,7 +43,7 @@ def _fetch(latitude: float, longitude: float, timezone_name: str = "auto") -> di
     return payload
 
 
-def forecast_15m(latitude: float, longitude: float, *, timezone_name: str = "auto", horizon_hours: int = 36) -> dict[str, Any]:
+def forecast_15m(latitude: float, longitude: float, *, timezone_name: str = "auto", horizon_hours: int = 36, now: datetime | None = None) -> dict[str, Any]:
     payload = _fetch(latitude, longitude, timezone_name)
     hourly = payload["hourly"]
     try:
@@ -54,7 +54,13 @@ def forecast_15m(latitude: float, longitude: float, *, timezone_name: str = "aut
     if frame[HOURLY].isna().to_numpy().any():
         missing = [name for name in HOURLY if bool(frame[name].isna().to_numpy().any())]
         raise ForecastUnavailable(f"Open-Meteo forecast lacks required fields: {', '.join(missing)}")
-    quarter = frame.resample("15min").interpolate(method="time").iloc[: max(1, horizon_hours * 4 + 1)]
+    quarter = frame.resample("15min").interpolate(method="time")
+    # Open-Meteo starts at local midnight; the plan must start at the current quarter-hour,
+    # otherwise "current" conditions and alerts would describe 00:00 instead of now.
+    now_utc = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    start = pd.Timestamp(now_utc).floor("15min")
+    upcoming = quarter[quarter.index >= start]
+    quarter = (upcoming if len(upcoming) else quarter.iloc[-1:]).iloc[: max(1, horizon_hours * 4 + 1)]
     issued = datetime.now(timezone.utc).isoformat()
     rows: list[dict[str, Any]] = []
     for stamp, values in quarter.iterrows():
