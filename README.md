@@ -4,6 +4,8 @@
 
 **Live app (AWS Amplify, Mumbai):** https://main.d2y1tc05g1s6r3.amplifyapp.com · **API:** https://hrzm2jaosj.execute-api.ap-south-1.amazonaws.com/api/health · **Demo video (3 min):** _link added after recording_
 
+_The idea and plan were drafted before kickoff (`docs/ShiftShield_Final_Plan_v7.pdf`, Oct 4). All code was written during the event, Oct 8 to 11, as the commit history shows._
+
 Outdoor workers in Indian cities get heat advice as a fixed rule: "avoid work from 12 noon to 3 PM". ShiftShield turns a worksite's real conditions into a work-rest schedule, warns about an hour before it tightens, and keeps a record of whether the break happened.
 
 > Decision support only, not medical or legal advice. Thresholds are pending occupational-safety review. Not for field use without a qualified review.
