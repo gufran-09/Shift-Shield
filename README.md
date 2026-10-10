@@ -36,7 +36,7 @@ Archive/reanalysis is not an on-site reading, and the site adjustments are provi
 | Rulebook answer key: Delhi HAP 2025, every row checked by hand against the PDF page | 48 rows; 15 on scanned pages flagged | `tests/test_rulebook_answer_key.py` |
 | Rulebook answer key: Telangana HAP 2021, every row checked by hand | 26 rows; plan gives two conflicting peak windows (p.35, p.59) | `tests/test_rulebook_answer_key_telangana.py` |
 | NIOSH thresholds equal the RAL/REL equations (section 8.1), rounded down | pass for every row | `tests/test_niosh_equations.py` |
-| Rulebook agent recall / precision on the Delhi plan | _pending Bedrock run_ | `python -m evaluation.score_rulebook candidates.json tests/data/heat_action_plans/delhi_hap_2025_obligations.csv` |
+| Rulebook agent recall / precision on the Delhi plan | not measured: Bedrock quotas were restricted on our account during the event (support case open) | `python -m evaluation.score_rulebook candidates.json tests/data/heat_action_plans/delhi_hap_2025_obligations.csv` |
 
 ## Run locally
 

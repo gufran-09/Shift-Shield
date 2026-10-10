@@ -26,7 +26,7 @@ Live on AWS in ap-south-1 (Mumbai), deployed with AWS SAM: the React app on Ampl
 - Our WBGT matches an independent implementation we wrote from the paper within 0.5 °C on five Hyderabad cases. Physical sanity tests: more humidity, less shade or less wind never lowers WBGT in sun.
 - Every threshold equals the NIOSH equation, rounded down. Switching from chart readings to the equations made one live Hyderabad reading stricter (30/30 → 15/45).
 - Hand-checked answer keys for both plans: 48 Delhi rows (15 on scanned pages) and 26 Telangana rows. Telangana's plan gives two different peak windows for workers (p.35 and p.59) and never says how long a break should be, which is the gap ShiftShield fills.
-- Rulebook agent score on the Delhi plan: [FILL: recall/precision, or "not measured: Bedrock quota was restricted during the event"].
+- Rulebook agent score on the Delhi plan: **not measured.** Our AWS account's Bedrock quotas were zero in ap-south-1 and limited to one small test per day in us-west-2 for the whole event (AWS support case open). The extractor, the exact-quote check, the answer keys and the scorer (`backend/evaluation/`) are built and tested, so the score can be run as soon as the quota is lifted.
 - 49 automated tests.
 
 ## Limits
