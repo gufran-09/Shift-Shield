@@ -1,6 +1,6 @@
 # ShiftShield: the heat alert that proves the rest happened
 
-**Track 02: Heat and Water** · Team EcoNexus (Sameer Ahmed, Gufran Ahmed) · Repo: https://github.com/gufran-09/Shift-Shield · Video: [FILL] · Live app: [FILL]
+**Track 02: Heat and Water** · Team EcoNexus (Sameer Ahmed, Gufran Ahmed) · Repo: https://github.com/gufran-09/Shift-Shield · Video: [FILL] · Live app: https://main.d2y1tc05g1s6r3.amplifyapp.com
 
 ## The problem
 
@@ -19,7 +19,7 @@ We ran real archived weather for Hyderabad on 4 May 2024 through our pipeline fo
 
 ## Where AWS fits
 
-AWS SAM deploys everything to ap-south-1 (Mumbai): the React app, API Gateway HTTP API, FastAPI on Lambda (Python 3.12), nine DynamoDB tables, an EventBridge Scheduler evaluator every 15 minutes with a dead-letter queue, SNS email alerts, and Secrets Manager for signed acknowledgement links. The rulebook agent uses Strands Agents with Amazon Bedrock (Amazon Nova Pro, called in us-west-2 because Bedrock quotas in ap-south-1 were zero for our account). [FILL: confirm services actually deployed]
+Live on AWS in ap-south-1 (Mumbai), deployed with AWS SAM: the React app on Amplify Hosting, an API Gateway HTTP API, FastAPI on Lambda (Python 3.12), nine DynamoDB tables, an evaluator Lambda run every 15 minutes by EventBridge with a dead-letter queue, SNS email alerts, CloudWatch alarms on evaluator errors and the dead-letter queue, and Secrets Manager for signed acknowledgement links. The rulebook agent uses Strands Agents with Amazon Bedrock (Amazon Nova Pro, called in us-west-2 because Bedrock quotas in ap-south-1 were zero for our account).
 
 ## How we checked it
 

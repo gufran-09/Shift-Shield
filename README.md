@@ -2,7 +2,7 @@
 
 **The heat alert that proves the rest happened.** Environmental Hacks 2026 (WeMakeDevs × AWS), Track 02: Heat and Water. Team EcoNexus: Sameer Ahmed, Gufran Ahmed.
 
-**Live app:** _link added after deployment_ · **Demo video (3 min):** _link added after recording_
+**Live app (AWS Amplify, Mumbai):** https://main.d2y1tc05g1s6r3.amplifyapp.com · **API:** https://hrzm2jaosj.execute-api.ap-south-1.amazonaws.com/api/health · **Demo video (3 min):** _link added after recording_
 
 Outdoor workers in Indian cities get heat advice as a fixed rule: "avoid work from 12 noon to 3 PM". ShiftShield turns a worksite's real conditions into a work-rest schedule, warns about an hour before it tightens, and keeps a record of whether the break happened.
 
@@ -52,7 +52,7 @@ cd backend && python -m pytest -q
 
 ## Architecture on AWS
 
-ShiftShield deploys serverless to **`ap-south-1` (Mumbai)** with the AWS Serverless Application Model (SAM). AI rule extraction calls Amazon Nova Pro in `us-west-2` (set by `BEDROCK_REGION`), because Bedrock quotas in ap-south-1 were zero for our account; its input is a public government PDF.
+ShiftShield is deployed serverless to **`ap-south-1` (Mumbai)** with the AWS Serverless Application Model (SAM); `python scripts/verify_aws_stack.py` checks the live tables, functions, topic and alarms. AI rule extraction calls Amazon Nova Pro in `us-west-2` (set by `BEDROCK_REGION`), because Bedrock quotas in ap-south-1 were zero for our account; its input is a public government PDF.
 
 ```text
 ┌─────────────────┐       ┌─────────────────┐       ┌──────────────────────┐
