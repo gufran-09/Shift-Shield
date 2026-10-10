@@ -49,7 +49,7 @@ export function Shell() {
           <div className="topbar__right"><span className="topbar__date">FIELD OPERATIONS</span><Link className="topbar__action" to={siteId ? `/dashboard/${siteId}` : '/setup'}>{siteId ? 'View shift' : 'Create site'}<ArrowUpRight size={15} /></Link></div>
         </header>
         <main className="page-wrap"><Outlet /></main>
-        <footer className="page-footer"><span>SHIFT SHIELD <i>·</i> HEAT SAFETY WITH PROOF OF REST</span><span>Threshold chart transcription pending professional review. Follow official local guidance.</span></footer>
+        <footer className="page-footer"><span>SHIFT SHIELD <i>·</i> HEAT SAFETY WITH PROOF OF REST</span><span>Thresholds from NIOSH 2016-106 equations, pending professional review. Follow official local guidance.</span></footer>
       </div>
     </div>
   );

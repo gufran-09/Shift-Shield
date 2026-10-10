@@ -49,7 +49,7 @@ export function SetupPage() {
   return <div className="setup-page page-stack">
     <Link to="/" className="back-link"><ArrowLeft size={15} /> Back to public heat check</Link>
     <div className="setup-heading"><div><span className="eyebrow">SITE ONBOARDING · 03 MIN</span><h1>Put your shift<br /><em>on the map.</em></h1><p>Tell ShiftShield what the crew is working in. Unknown values stay cautious; site coefficients are prototype assumptions.</p></div><div className="setup-counter"><span>PROFILE</span><strong>01 <i>/</i> 01</strong><small>ONE WORKSITE</small></div></div>
-    <SafetyNotice>Site adjustments and threshold charts are demo-only, not calibrated site measurements. Professional review is required before field use.</SafetyNotice>
+    <SafetyNotice>Site adjustments and thresholds are demo-only, not calibrated site measurements. Professional review is required before field use.</SafetyNotice>
     <form className="setup-form" onSubmit={submit}>
       <div className="setup-form__section"><div className="setup-form__section-head"><span>01</span><div><h2>Where is the work?</h2><p>Site name, coordinates and local timezone.</p></div></div>
         <PlaceSearch onPick={(place) => { set('latitude', place.latitude); set('longitude', place.longitude); if (place.timezone) set('timezone', place.timezone); }} />
