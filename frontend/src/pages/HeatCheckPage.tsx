@@ -48,7 +48,7 @@ export function HeatCheckPage() {
       </div>
       <div className="hero__visual" aria-label="Illustration of a ShiftShield heat-risk shift dashboard">
         <div className="hero-card hero-card--main">
-          <div className="hero-card__top"><span><span className="tiny-orange-dot" /> LIVE SITE ESTIMATE</span><span className="mono">DELHI · 13:15</span></div>
+          <div className="hero-card__top"><span><span className="tiny-orange-dot" /> EXAMPLE SITE ESTIMATE</span><span className="mono">ILLUSTRATION · DELHI</span></div>
           <div className="hero-dial"><div className="hero-dial__arc" /><div className="hero-dial__content"><span>EST. SITE WBGT</span><strong>29.4<small>°C</small></strong><span className="hero-dial__range">+ 1.0° margin <i /> 30.4° conservative</span></div></div>
           <div className="hero-card__rule" />
           <div className="hero-plan"><div><span className="eyebrow">CURRENT WORK / REST</span><strong>30 <small>work</small> <i>/</i> 30 <small>rest</small></strong></div><div className="hero-plan__badge">HIGH</div></div>
@@ -73,7 +73,7 @@ export function HeatCheckPage() {
       </div>
     </section>
 
-    <section className="heat-check-section" id="heat-check"><div className="heat-check-intro"><span className="eyebrow">PUBLIC HEAT CHECK <i className="section-mark" /></span><h2>Know the risk<br /><em>at your coordinates.</em></h2><p>Choose the worksite conditions and run a forecast-based estimate. No sign-in. No hardware. No heat-index substitution.</p><div className="heat-check-points"><span><CheckCircle2 size={15} /> WBGT method is shown</span><span><CheckCircle2 size={15} /> 15-minute schedule intervals</span><span><CheckCircle2 size={15} /> Conservative margin made visible</span></div><div className="heat-check-aside"><TriangleAlert size={18} /><span>Prototype threshold curves and site coefficients still need occupational-safety review before field use.</span></div></div>
+    <section className="heat-check-section" id="heat-check"><div className="heat-check-intro"><span className="eyebrow">PUBLIC HEAT CHECK <i className="section-mark" /></span><h2>Know the risk<br /><em>at your coordinates.</em></h2><p>Choose the worksite conditions and run a forecast-based estimate. No sign-in. No hardware. No heat-index substitution.</p><div className="heat-check-points"><span><CheckCircle2 size={15} /> WBGT method is shown</span><span><CheckCircle2 size={15} /> 15-minute schedule intervals</span><span><CheckCircle2 size={15} /> Conservative margin made visible</span></div><div className="heat-check-aside"><TriangleAlert size={18} /><span>Prototype thresholds and site coefficients still need occupational-safety review before field use.</span></div></div>
       <div className="check-form-wrap"><div className="check-form-header"><div><span className="eyebrow">STEP 01 / SITE CONDITIONS</span><h3>Check heat risk</h3></div><span className="form-time"><span className="online-dot" /> ~10 SEC</span></div>
         <form className="check-form" onSubmit={submit}>
           <div className="form-section-label"><MapPin size={15} /> LOCATION</div>
